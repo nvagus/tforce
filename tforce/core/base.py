@@ -9,20 +9,24 @@ import tensorflow as tf
 
 class Default(dict):
     class Entry(object):
+        class ObjWrapper(object):
+            def __init__(self, obj):
+                self.obj = obj
+
         def __init__(self, obj, const=False):
-            self._obj = obj
+            self._obj = obj if isinstance(obj, Default.Entry.ObjWrapper) else Default.Entry.ObjWrapper(obj)
             self._const = const
 
         @property
         def obj(self):
-            return self._obj
+            return self._obj.obj
 
         @obj.setter
         def obj(self, val):
             if self._const:
-                raise ValueError('Invalid Assignment')
+               self._obj = Default.Entry.ObjWrapper(val)
             else:
-                self._obj = val
+                self._obj.obj = val
 
         def copy(self):
             return self.__class__(self._obj, const=True)
@@ -40,14 +44,22 @@ class Default(dict):
         else:
             self[key] = Default.Entry(value)
 
+    def copy(self):
+        default = self.__class__()
+        for key, value in self.items():
+            default[key] = value.copy()
+        return default
+
+    __copy__ = copy
+
 
 class Scope(object):
     __scopes__ = {}
+    default = Default()
 
-    def __init_subclass__(cls, **kws):
+    @classmethod
+    def __init_subclass__(cls, name, **param):
         def __init__(self, *args, **kwargs):
-            name = kwargs.pop('name') if 'name' in kwargs else self.default.name
-
             graph = tf.get_default_graph()
             if graph not in Scope.__scopes__:
                 Scope.__scopes__[graph] = set()
@@ -68,3 +80,11 @@ class Scope(object):
             self.build()
 
         cls.__init__ = __init__
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def _scope(self):
+        return self.__scope
