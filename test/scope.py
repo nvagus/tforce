@@ -8,6 +8,12 @@ import code
 import tforce as t4
 
 
+class A(t4.Scope, name='A'):
+    def __init__(self):
+        pass
+
+
 if __name__ == '__main__':
-    x = t4.Scope
+    a = A()
+    b = A(name='b')
     code.interact(local=locals())

@@ -57,20 +57,23 @@ class Scope(object):
     __scopes__ = {}
     default = Default()
 
-    @classmethod
-    def __init_subclass__(cls, name, **param):
+    def __init_subclass__(cls, **param):
+        cls.default = cls.default.copy()
+        for key, val in param.items():
+            setattr(cls.default, key, val)
+
         def __init__(self, *args, **kwargs):
             graph = tf.get_default_graph()
             if graph not in Scope.__scopes__:
                 Scope.__scopes__[graph] = set()
             scopes = Scope.__scopes__[graph]
             outer_scope = graph.get_name_scope()
-
+            name = kwargs.pop('name') if 'name' in kwargs else cls.default.name
             count = 0
             while True:
                 self._name = '{}_{}'.format(name, count) if count else name
                 self._scope = '{}/{}/'.format(outer_scope, self._name) if outer_scope is not '' \
-                    else '{}/'.format(self._name)
+                    else f'{self._name}/'
                 if self._scope not in scopes:
                     scopes.add(self._scope)
                     break
@@ -87,4 +90,4 @@ class Scope(object):
 
     @property
     def _scope(self):
-        return self.__scope
+        return self._scope
