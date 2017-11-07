@@ -62,6 +62,8 @@ class Scope(object):
         for key, val in param.items():
             setattr(cls.default, key, val)
 
+        init = cls.__init__
+
         def __init__(self, *args, **kwargs):
             graph = tf.get_default_graph()
             if graph not in Scope.__scopes__:
@@ -72,14 +74,12 @@ class Scope(object):
             count = 0
             while True:
                 self._name = '{}_{}'.format(name, count) if count else name
-                self._scope = '{}/{}/'.format(outer_scope, self._name) if outer_scope is not '' \
-                    else f'{self._name}/'
+                self._scope = f'{outer_scope}/{self._name}/' if outer_scope is not '' else f'{self._name}/'
                 if self._scope not in scopes:
                     scopes.add(self._scope)
                     break
                 count += 1
-            self._built = False
-            self.__init__(*args, **kwargs)
+            init(self, *args, **kwargs)
             self.build()
 
         cls.__init__ = __init__
@@ -89,5 +89,5 @@ class Scope(object):
         return self._name
 
     @property
-    def _scope(self):
+    def scope(self):
         return self._scope
