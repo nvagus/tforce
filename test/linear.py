@@ -15,5 +15,15 @@ if __name__ == '__main__':
         x = tf.constant([1., 2., 3.], dtype=t4.Widget.default.float_dtype)
         lin = t4.Linear(3, 5)
         y = lin(x)
+        sess.run(tf.global_variables_initializer())
         print(sess.run(y))
+        print(
+            lin.global_variables,
+            lin.trainable_variables,
+            lin.weight_variables,
+            lin.bias_variables,
+            lin.losses,
+            lin.summaries,
+            sep='\n'
+        )
         code.interact(local=locals())

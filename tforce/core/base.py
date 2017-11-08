@@ -49,6 +49,7 @@ class Default(dict):
             return repr(self._obj.obj)
 
     def __init__(self):
+        super(Default, self).__init__()
         self._active = False
 
     def __getattr__(self, item):

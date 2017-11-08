@@ -22,7 +22,7 @@ class Parameter(Widget, name='parameter'):
         self._regularizer = self._regularizer()
 
     def _setup(self):
-        parameter = self._initializer(self._shape, self._dtype)
+        parameter = tf.Variable(self._initializer(self._shape, self._dtype))
         self._regularizer(parameter)
         tf.summary.histogram(self._name, parameter)
         return parameter

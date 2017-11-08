@@ -11,13 +11,14 @@ from ...core import Widget
 
 class Regularizer(Widget, name='regularizer'):
     def __init__(self, rate=None):
+        super(Regularizer, self).__init__()
         if not hasattr(self, '_f'):
             self._f = self.default.call
         self._rate = rate or self.default.rate
 
     def _setup(self, *args, **kwargs):
         loss = self._rate * self._f(*args, **kwargs)
-        tf.get_default_graph().add_to_collection(loss, tf.GraphKeys.REGULARIZATION_LOSSES)
+        tf.get_default_graph().add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, loss)
         return loss
 
 
@@ -29,7 +30,7 @@ def l2_loss(x):
     return tf.reduce_sum(x ** 2) / 2
 
 
-class NoRegularizer(Regularizer, name='no_regularizer', rate=0., call=lambda *args, **kwargs: 0):
+class NoRegularizer(Regularizer, name='no_regularizer', rate=0., call=tf.reduce_min):
     pass
 
 
