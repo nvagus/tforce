@@ -4,12 +4,12 @@
 # :time: 11/8/17-8:08 PM
 # :package: tforce.test
 
-import tforce as t4
 import tensorflow as tf
+
+import tforce as t4
 
 
 class Model(t4.Model):
-
     def __init__(self):
         super(Model, self).__init__()
 
@@ -38,6 +38,7 @@ class Model(t4.Model):
         )
 
 
+# python3 -m test.mnist -d 0
 @t4.main.begin
 @t4.main.gpu
 @t4.main.end
@@ -48,7 +49,6 @@ def main():
         'image', 'label'
     )
     model.setup(stream)
-    # with model.using_workers(2), model.using_summaries():
     with model.using_workers():
         stream.option = 'train'
         t4.trainer.Alice(model.train).run(1200, 1)
