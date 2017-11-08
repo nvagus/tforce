@@ -15,4 +15,3 @@ class Regularizer(DefaultChain):
 
     def _setup(self, *args, **kwargs):
         loss = self._rate * self._f(*args, **kwargs)
-
