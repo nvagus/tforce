@@ -5,5 +5,6 @@
 # :package: tforce.widgets.utils
 
 from .initializer import *
-from .regularizers import *
+from .normalizers import *
 from .parameters import *
+from .regularizers import *
