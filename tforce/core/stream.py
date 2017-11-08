@@ -349,6 +349,6 @@ class MultiDataStream(AbstractDataStream):
 
 
 class MultiNpzDataStream(MultiDataStream):
-    def __init__(self, data: {str: str}, capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
-        data = {sub: DataSet(NpzDataSrc(data[sub]), *kwargs) for sub in data}
+    def __init__(self, data: {str: str}, *keys, capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
+        data = {sub: DataSet(NpzDataSrc(data[sub]), *keys) for sub in data}
         super(MultiNpzDataStream, self).__init__(data, capacity, enqueue_batch, dequeue_batch, **kwargs)
