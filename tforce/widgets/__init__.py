@@ -2,7 +2,6 @@
 # -- coding: utf8 --
 # :author: nvagus
 # :time: 11/6/17-2:51 PM
-# :package: tforce
+# :package: tforce.widgets
 
-from .core import *
-from .widgets import *
+from .utils import *

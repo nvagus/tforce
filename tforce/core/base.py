@@ -4,7 +4,7 @@
 # :time: 11/6/17-2:54 PM
 # :package: tforce.core
 
-import contextlib as ctl
+import contextlib
 import os
 
 import numpy as np
@@ -67,7 +67,7 @@ class Default(dict):
             self[key] = Default.Entry(value)
 
     @property
-    @ctl.contextmanager
+    @contextlib.contextmanager
     def active(self):
         self._active = True
         try:
@@ -84,7 +84,17 @@ class Default(dict):
     __copy__ = copy
 
 
-class Scope(object):
+class DefaultChain(object):
+    default = Default()
+
+    def __init_subclass__(cls, **kwargs):
+        cls.default = cls.default.copy()
+        with cls.default.active:
+            for key, val in kwargs.items():
+                setattr(cls.default, key, val)
+
+
+class Scope(DefaultChain):
     __scopes__ = {}
     default = Default()
 
@@ -94,10 +104,7 @@ class Scope(object):
             self._name = ''
 
     def __init_subclass__(cls, **params):
-        cls.default = cls.default.copy()
-        with cls.default.active:
-            for key, val in params.items():
-                setattr(cls.default, key, val)
+        super(Scope, cls).__init_subclass__(**params)
         init = cls.__init__
 
         def __init__(self, *args, **kwargs):
@@ -167,7 +174,7 @@ class Scope(object):
         return tf.get_collection(tf.GraphKeys.SUMMARIES, self._scope)
 
 
-class Widget(Scope, name='widget'):
+class Widget(Scope, name='widget', float_dtype=tf.float32):
     def __init__(self, **kwargs):
         super(Widget, self).__init__(**kwargs)
 
