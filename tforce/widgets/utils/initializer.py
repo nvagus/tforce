@@ -11,24 +11,24 @@ from ...core import DefaultChain
 from ...core import Widget
 
 
-class Initializers(Widget, name='initializer'):
+class Initializer(Widget, name='initializer'):
     def __init__(self):
-        super(Initializers, self).__init__()
+        super(Initializer, self).__init__()
         if not hasattr(self, '_f'):
             self._f = self.default.call
 
     def setup(self, shape, dtype):
-        return super(Initializers, self).setup()
+        return super(Initializer, self).setup()
 
     def _setup(self, shape, dtype):
         return self._f(shape=shape, dtype=dtype)
 
 
-class ZerosInitializer(Initializers, name='zeros_initializer', call=tf.zeros):
+class ZerosInitializer(Initializer, name='zeros_initializer', call=tf.zeros):
     pass
 
 
-class OnesInitializer(Initializers, name='ones_initializer', call=tf.ones):
+class OnesInitializer(Initializer, name='ones_initializer', call=tf.ones):
     pass
 
 
@@ -49,5 +49,5 @@ class HeNormal(VarianceScaling, fin=1., fout=0., scale=2.):
         return tf.truncated_normal(stddev=cls.get_variance(shape), shape=shape, dtype=dtype)
 
 
-class HeNormalInitializer(Initializers, name='he_normal_initializer', call=HeNormal):
+class HeNormalInitializer(Initializer, name='he_normal_initializer', call=HeNormal):
     pass

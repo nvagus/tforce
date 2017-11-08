@@ -4,6 +4,6 @@
 # :time: 11/8/17-10:43 AM
 # :package: tforce.widgets.utils
 
-from . import initializers
-from . import parameters
-from . import regularizers
+from .initializer import *
+from .regularizers import *
+from .parameters import *

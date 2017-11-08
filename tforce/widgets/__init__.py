@@ -4,4 +4,5 @@
 # :time: 11/6/17-2:51 PM
 # :package: tforce.widgets
 
+from .linear import *
 from .utils import *
