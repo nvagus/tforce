@@ -24,7 +24,7 @@ class _HideCursor(object):
 def _print_log(name, step, values, labels, fmt='{}={:<15.5f}', next_line=True):
     end = '\n' if next_line else '\r'
     pairs = zip(_make_iterable(labels), _make_iterable(values))
-    print('{} loop:{:<10d}\t'.format(name, step) + '\t'.join([fmt.format(*pair) for pair in pairs]), end=end,
+    print(f'{name} loop:{step:<10d}\t' + '\t'.join([fmt.format(*pair) for pair in pairs]), end=end,
           flush=True)
 
 

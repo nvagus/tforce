@@ -10,6 +10,7 @@ from .utils import HeNormalInitializer, ZerosInitializer
 from .utils import L2Regularizer, NoRegularizer
 from .utils import Weight, Bias
 from ..core import Widget
+from .utils import BatchNormWithScale
 
 
 class Linear(
@@ -46,6 +47,24 @@ class Linear(
     @property
     def bias(self):
         return self._bias
+
+
+class LinearBNS(
+    Linear, name='linear_bn_scale'
+):
+    def __init__(self, input_depth, output_depth, **kwargs):
+        super(LinearBNS, self).__init__(input_depth, output_depth, **kwargs)
+
+    def _build(self):
+        self._bns = BatchNormWithScale()
+
+    def _setup(self, x):
+        x = super(LinearBNS, self)._setup(x)
+        return self._bns(x)
+
+    @property
+    def bns(self):
+        return self._bns
 
 
 class DeepLinear(

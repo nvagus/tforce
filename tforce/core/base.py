@@ -6,6 +6,7 @@
 
 import contextlib
 import os
+import inspect
 
 import numpy as np
 import tensorflow as tf
@@ -213,3 +214,29 @@ class Widget(Scope, name='widget', float_dtype=tf.float32):
     @classmethod
     def lazy(cls, *args, **kwargs):
         return cls.Lazy(cls, *args, **kwargs)
+
+    @staticmethod
+    def from_op(f):
+        params = inspect.signature(f).parameters
+        defaults = {key: val.default for key, val in params.items() if val.default is not inspect.Parameter.empty}
+
+        class Op(Widget, name=f.__name__, **defaults):
+            def __init__(self, **kwargs):
+                super(Op, self).__init__(**kwargs)
+
+            def _setup(self, *args, **kwargs):
+                for key, val in zip(params, args):
+                    kwargs[key] = val
+                for key, val in defaults.items():
+                    if key not in kwargs:
+                        kwargs[key] = val
+                    return f(**kwargs)
+
+        def op_wrapper(*args, **kwargs):
+            return Op()(*args, **kwargs)
+
+        op_wrapper.__name__ = f.__name__
+        op_wrapper.default = Op.default
+        op_wrapper.Op = Op
+
+        return op_wrapper
