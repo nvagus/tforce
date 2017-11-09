@@ -72,8 +72,8 @@ class BatchNorm(Widget, name='batch_norm', decay=0.999, epsilon=1e-8, shift=None
 class Scale(Widget):
     default_name = 'scale'
 
-    def __init__(self, name=default_name):
-        super(Scale, self).__init__(name)
+    def __init__(self, **kwargs):
+        super(Scale, self).__init__(**kwargs)
 
     def _build(self):
         self._mean = tf.Variable(tf.constant(0., dtype=self.default.float_dtype))
