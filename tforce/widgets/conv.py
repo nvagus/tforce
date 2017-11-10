@@ -254,3 +254,45 @@ class BottleNeckResidualConv(ResidualConv, name='bottle_neck_residual_conv', rat
             self._shortcut = self._block(
                 self._input_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width
             )
+
+
+class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
+    def __init__(
+            self, *channels,
+            filter_height=None, filter_width=None, stride_height=None, stride_width=None,
+            block=None, **kwargs
+    ):
+        super(DeepResidualConv, self).__init__(block, **kwargs)
+        self._channels = channels
+        self._filter_height = filter_height or self._block.default.stride_height
+        self._filter_width = filter_width or self._block.default.stride_width
+        self._stride_height = stride_height or self._block.default.stride_height
+        self._stride_width = stride_width or self._block.default.stride_width
+
+    def _build(self):
+        self._layers = [
+            self._block(
+                input_channel, output_channel,
+                self._filter_height, self._filter_width, self._stride_height, self._stride_width
+            ) for input_channel, output_channel in zip(self._channels, self._channels[1:])
+        ]
+
+    @property
+    def channels(self):
+        return self._channels
+
+    @property
+    def filter_height(self):
+        return self._filter_height
+
+    @property
+    def filter_width(self):
+        return self._filter_width
+
+    @property
+    def stride_height(self):
+        return self._stride_height
+
+    @property
+    def stride_width(self):
+        return self._stride_width
