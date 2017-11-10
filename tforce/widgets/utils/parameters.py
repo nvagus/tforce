@@ -6,12 +6,14 @@
 
 import tensorflow as tf
 
+from .initializer import ZerosInitializer
+from .regularizers import NoRegularizer
 from ...core import Widget
 
 
 class Parameter(Widget, name='parameter'):
-    def __init__(self, shape, dtype, initializer, regularizer):
-        super(Parameter, self).__init__()
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
+        super(Parameter, self).__init__(**kwargs)
         self._shape = shape
         self._dtype = dtype
         self._initializer = initializer
@@ -49,6 +51,9 @@ class Parameter(Widget, name='parameter'):
 
 
 class Weight(Parameter, name='weight'):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
+        super(Weight, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+
     def _setup(self):
         parameter = super(Weight, self)._setup()
         tf.get_default_graph().add_to_collection(tf.GraphKeys.WEIGHTS, parameter)
@@ -56,6 +61,9 @@ class Weight(Parameter, name='weight'):
 
 
 class Filter(Parameter, name='filter'):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
+        super(Filter, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+
     def _setup(self):
         parameter = super(Filter, self)._setup()
         tf.get_default_graph().add_to_collection(tf.GraphKeys.WEIGHTS, parameter)
@@ -63,6 +71,9 @@ class Filter(Parameter, name='filter'):
 
 
 class Bias(Parameter, name='bias'):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
+        super(Bias, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+
     def _setup(self):
         parameter = super(Bias, self)._setup()
         tf.get_default_graph().add_to_collection(tf.GraphKeys.BIASES, parameter)

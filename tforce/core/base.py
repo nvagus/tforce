@@ -240,3 +240,25 @@ class Widget(Scope, name='widget', float_dtype=tf.float32):
         op_wrapper.Op = Op
 
         return op_wrapper
+
+
+class DeepWidget(Widget, name='deep_widget', block=Widget):
+    def __init__(self, block=None, **kwargs):
+        super(DeepWidget, self).__init__(**kwargs)
+        self._layers = []
+        self._block = block or self.default.block
+
+    def _setup(self, x, *calls):
+        for layer in self._layers[:-1]:
+            x = layer(x)
+            for call in calls:
+                x = call(x)
+        return self._layers[-1](x)
+
+    @property
+    def layers(self):
+        return self._layers
+
+    @property
+    def block(self):
+        return self._block
