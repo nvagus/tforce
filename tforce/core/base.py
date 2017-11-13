@@ -5,8 +5,8 @@
 # :package: tforce.core
 
 import contextlib
-import os
 import inspect
+import os
 
 import numpy as np
 import tensorflow as tf
@@ -98,7 +98,6 @@ class DefaultChain(object):
 
 class Scope(DefaultChain):
     __scopes__ = {}
-    default = Default()
 
     def __init__(self, **kwargs):
         if not issubclass(self.__class__, Scope):
@@ -223,6 +222,7 @@ class Widget(Scope, name='widget', float_dtype=tf.float32):
         class Op(Widget, name=f.__name__, **defaults):
             def __init__(self, **kwargs):
                 super(Op, self).__init__(**kwargs)
+                self.f = f
 
             def _setup(self, *args, **kwargs):
                 for key, val in zip(params, args):
@@ -230,7 +230,7 @@ class Widget(Scope, name='widget', float_dtype=tf.float32):
                 for key, val in defaults.items():
                     if key not in kwargs:
                         kwargs[key] = val
-                    return f(**kwargs)
+                return self.f(**kwargs)
 
         def op_wrapper(*args, **kwargs):
             return Op()(*args, **kwargs)

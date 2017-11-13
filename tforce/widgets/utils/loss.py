@@ -10,7 +10,7 @@ from ...core import Widget
 
 
 @Widget.from_op
-def categorical_cross_entropy_loss(y_pred, y_true, with_false=False, epsilon=1e-8):
+def categorical_cross_entropy_loss(y_pred, y_true, with_false=True, epsilon=1e-8):
     true = -y_true * tf.log(y_pred + epsilon)
     if with_false:
         false = -(1 - y_true) * tf.log(1 - y_pred + epsilon)

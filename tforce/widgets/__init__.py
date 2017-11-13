@@ -4,5 +4,6 @@
 # :time: 11/6/17-2:51 PM
 # :package: tforce.widgets
 
+from .conv import *
 from .linear import *
 from .utils import *

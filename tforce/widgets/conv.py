@@ -17,7 +17,7 @@ from .utils import BatchNormWithScale
 
 class Conv(
     Widget, name='conv',
-    filter_height=5, filter_width=5, stride_height=2, stride_height=2,
+    filter_height=5, filter_width=5, stride_height=2, stride_width=2,
     filter_initializer=HeNormalInitializer, filter_regularizer=L2Regularizer,
     bias_initializer=ZerosInitializer, bias_regularizer=NoRegularizer
 ):
@@ -35,13 +35,13 @@ class Conv(
         self._stride_width = stride_width or self.default.stride_width
 
     def _build(self):
-        self._filter = Filter(
+        self._filter = Filter.instance(
             shape=(self._filter_height, self._filter_width, self._input_channel, self._output_channel),
             dtype=self.default.float_dtype,
             initializer=self.default.filter_initializer,
             regularizer=self.default.filter_regularizer
         )
-        self._bias = Bias(
+        self._bias = Bias.instance(
             shape=(self._output_channel,),
             dtype=self.default.float_dtype,
             initializer=self.default.bias_initializer,
@@ -151,7 +151,7 @@ class DeepConv(DeepWidget, name='deep_conv', block=Conv):
 
 class ResidualConv(
     DeepWidget, name='residual_conv', block=ConvBNS,
-    filter_height=3, filter_width=3, stride_height=2, stride_height=2
+    filter_height=3, filter_width=3, stride_height=2, stride_width=2
 ):
     def __init__(
             self, input_channel, output_channel,

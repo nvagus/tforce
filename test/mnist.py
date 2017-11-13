@@ -19,7 +19,7 @@ class Model(t4.Model):
 
         dense = t4.image.to_dense(image)
         flat = t4.image.to_flat(dense)
-        pred = tf.nn.softmax(t4.DeepLinear(28 * 28, 64, 10)(flat))
+        pred = tf.nn.softmax(t4.Linear(28 * 28, 10)(flat))
 
         loss = t4.categorical_cross_entropy_loss(pred, tf.one_hot(label, 10, dtype=t4.Widget.default.float_dtype))
         acc = t4.correct_prediction(tf.argmax(pred, axis=1), label)

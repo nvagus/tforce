@@ -25,7 +25,7 @@ class Slot(Scope, name='slot', max_output=10):
             self, model, frame,
             outputs=None, updates=None, givens=None, others=None,
             scalars=None, hists=None, images=None, audios=None,
-            summaries=None, **kwargs
+            summaries=None, **__
     ):
         """ Initialize a slot, it is recommended to instantiate by model._add_slot method.
         :param model: the master model of the slot.
@@ -75,8 +75,9 @@ class Slot(Scope, name='slot', max_output=10):
             tf.summary.audio(name, x, self.default.max_output) for name, x in zip(self._audio_labels, self._audios))
         assert self._scalars_summary or self._hists_summary or self._images_summary or self._audios_summary, \
             'At least one output or summary should be set'
-        self._summaries += tf.summary.merge(
-            self._scalars_summary + self._hists_summary + self._images_summary + self._audios_summary)
+        self._summaries = tf.summary.merge(
+            self._scalars_summary + self._hists_summary + self._images_summary + self._audios_summary + self._summaries
+        )
 
     def __call__(self, givens=None, valid_step=False):
         """ Run the outputs, updates, others, and summaries once.
@@ -211,10 +212,10 @@ class Model(
         log_dir = log_dir or self.default.summary_dir
         port = port or self.default.tensorboard_port
 
-        with self._graph.as_default():
-            for _, slot in self._slots.items():
-                if not slot.built:
-                    slot.build()
+        # with self._graph.as_default():
+        #     for _, slot in self._slots.items():
+        #         if not slot.built:
+        #             slot.build()
 
         log_dir = os.path.join(log_dir, self._name)
         if os.path.exists(log_dir):

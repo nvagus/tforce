@@ -208,7 +208,7 @@ class AbstractDataStream(Scope, name='data', capacity=10000, enqueue_batch=100, 
         raise NotImplementedError()
 
 
-class DataStream(AbstractDataStream):
+class DataStream(AbstractDataStream, workers=2):
     def __init__(self, data: AbstractDataSet,
                  capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
         super(DataStream, self).__init__(**kwargs)
@@ -258,7 +258,8 @@ class DataStream(AbstractDataStream):
         self._sess.run(self._close)
 
     @contextlib.contextmanager
-    def using_workers(self, workers):
+    def using_workers(self, workers=None):
+        workers = workers or self.default.workers
         with Pool(workers, self._process) as pool, contextlib.closing(self):
             yield pool
 
@@ -322,7 +323,7 @@ class MultiDataStream(AbstractDataStream):
         self._batch = self._buffer.dequeue_many(self._dequeue_batch)
 
     @contextlib.contextmanager
-    def using_workers(self, workers):
+    def using_workers(self, workers=None):
         with contextlib.ExitStack() as stack:
             for stream in self._streams.values():
                 stack.enter_context(stream.using_workers(workers))
