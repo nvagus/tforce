@@ -38,7 +38,8 @@ class VarianceScaling(DefaultChain, fin=1., fout=1., scale=1.):
         prod = np.prod(shape[:-2])
         size_in = prod * shape[-2]
         size_out = prod * shape[-1]
-        return np.sqrt(cls.default.scale / (cls.default.fin * size_in + cls.default.fout * size_out))
+        ret = np.sqrt(cls.default.scale / (cls.default.fin * size_in + cls.default.fout * size_out))
+        return ret
 
     def __new__(cls, shape, dtype):
         raise NotImplementedError()
@@ -55,7 +56,7 @@ class HeNormalInitializer(Initializer, name='he_normal_initializer', call=HeNorm
 
 class HeUniform(VarianceScaling, fin=1., fout=0., scale=2.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.default.scale, 3 * cls.default.scale)
+        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
 
 
 class HeUniformInitializer(Initializer, name='he_uniform_initializer', call=HeUniform):
@@ -73,7 +74,7 @@ class LecunNormalInitializer(Initializer, name='lecun_normal_initializer', call=
 
 class LecunUniform(VarianceScaling, fin=1., fout=0., scale=1.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.default.scale, 3 * cls.default.scale)
+        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
 
 
 class LecunUniformInitializer(Initializer, name='lecun_uniform_initializer', call=LecunUniform):
@@ -91,7 +92,7 @@ class GlorotNormalInitializer(Initializer, name='glorot_normal_initializer', cal
 
 class GlorotUniform(VarianceScaling, fin=1., fout=1., scale=2.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.default.scale, 3 * cls.default.scale)
+        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
 
 
 class GlorotUniformInitializer(Initializer, name='glorot_uniform_initializer', call=GlorotUniform):

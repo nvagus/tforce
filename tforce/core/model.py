@@ -64,7 +64,7 @@ class Slot(Scope, name='slot', max_output=10):
         self._image_labels = _inspect_names(frame, self._images)
         self._audio_labels = _inspect_names(frame, self._audios)
 
-        self._summaries = summaries or ()
+        self._summaries = _make_iterable(summaries)
 
     def _build(self):
         self._scalars_summary = tuple(tf.summary.scalar(name, x) for name, x in zip(self._scalar_labels, self._scalars))

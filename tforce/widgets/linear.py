@@ -6,7 +6,7 @@
 
 import tensorflow as tf
 
-from .utils import GlorotUniformInitializer, ZerosInitializer
+from .utils import HeUniformInitializer, ZerosInitializer
 from .utils import L2Regularizer, NoRegularizer
 from .utils import Weight, Bias
 from ..core import Widget, DeepWidget
@@ -15,7 +15,7 @@ from .utils import BatchNormWithScale
 
 class Linear(
     Widget, name='linear',
-    weight_initializer=GlorotUniformInitializer, weight_regularizer=L2Regularizer,
+    weight_initializer=HeUniformInitializer, weight_regularizer=L2Regularizer,
     bias_initializer=ZerosInitializer, bias_regularizer=NoRegularizer
 ):
     def __init__(self, input_depth, output_depth, **kwargs):

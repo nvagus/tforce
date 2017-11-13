@@ -19,7 +19,8 @@ class Model(t4.Model):
 
         dense = t4.image.to_dense(image)
         flat = t4.image.to_flat(dense)
-        pred = tf.nn.softmax(t4.Linear(28 * 28, 10)(flat))
+        lin = t4.Linear(28 * 28, 10)
+        pred = tf.nn.softmax(lin(flat))
 
         loss = t4.categorical_cross_entropy_loss(pred, tf.one_hot(label, 10, dtype=t4.Widget.default.float_dtype))
         acc = t4.correct_prediction(tf.argmax(pred, axis=1), label)
@@ -29,7 +30,8 @@ class Model(t4.Model):
         self.train = self._add_slot(
             'train',
             outputs=(loss, acc),
-            updates=optimizer
+            updates=optimizer,
+            summaries=lin.summaries
         )
 
         self.valid = self._add_slot(
@@ -49,7 +51,7 @@ def main():
         'image', 'label'
     )
     model.setup(stream)
-    with model.using_workers():
+    with model.using_workers(), model.using_summaries():
         stream.option = 'train'
         t4.trainer.Alice(model.train).run(1200, 1)
         stream.option = 'valid'
