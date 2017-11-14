@@ -38,8 +38,7 @@ class VarianceScaling(DefaultChain, fin=1., fout=1., scale=1.):
         prod = np.prod(shape[:-2])
         size_in = prod * shape[-2]
         size_out = prod * shape[-1]
-        ret = np.sqrt(cls.default.scale / (cls.default.fin * size_in + cls.default.fout * size_out))
-        return ret
+        return np.sqrt(cls.default.scale / (cls.default.fin * size_in + cls.default.fout * size_out))
 
     def __new__(cls, shape, dtype):
         raise NotImplementedError()

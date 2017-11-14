@@ -115,8 +115,8 @@ class DeepConv(DeepWidget, name='deep_conv', block=Conv):
     ):
         super(DeepConv, self).__init__(block, **kwargs)
         self._channels = channels
-        self._filter_height = filter_height or self._block.default.stride_height
-        self._filter_width = filter_width or self._block.default.stride_width
+        self._filter_height = filter_height or self._block.default.filter_height
+        self._filter_width = filter_width or self._block.default.filter_width
         self._stride_height = stride_height or self._block.default.stride_height
         self._stride_width = stride_width or self._block.default.stride_width
 
