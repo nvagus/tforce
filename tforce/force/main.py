@@ -31,7 +31,7 @@ def _set_gpu(_, __, value):
 
 
 def _set_batch_size(_, __, value):
-    AbstractDataStream.default.dequeue_batch_size = value
+    AbstractDataStream.default.dequeue_batch = value
     return value
 
 
@@ -46,7 +46,7 @@ def batch_size(default):
     if callable(default):
         return click.option('-b', '--batch_size', prompt='Batch Size?', type=int, callback=_set_batch_size)(default)
     else:
-        return click.option('-b', '--batch_size', default=default, type=int, calllback=_set_batch_size)
+        return click.option('-b', '--batch_size', default=default, type=int, callback=_set_batch_size)
 
 
 option = click.option

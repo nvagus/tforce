@@ -10,18 +10,18 @@ from ...core import Widget
 
 
 @Widget.from_op
-def categorical_cross_entropy_loss(y_pred, y_true, with_false=True, epsilon=1e-8):
+def categorical_cross_entropy_loss(y_pred, y_true, with_false=True, epsilon=1e-8, sum_up=tf.reduce_mean):
     true = -y_true * tf.log(y_pred + epsilon)
     if with_false:
         false = -(1 - y_true) * tf.log(1 - y_pred + epsilon)
         cross_entropy = tf.reduce_sum(true + false, axis=1)
     else:
         cross_entropy = tf.reduce_sum(true, axis=1)
-    return tf.reduce_mean(cross_entropy)
+    return sum_up(cross_entropy)
 
 
 @Widget.from_op
-def correct_prediction(y_pred, y_true):
+def correct_prediction(y_pred, y_true, sum_up=tf.reduce_mean):
     y_pred = tf.cast(y_pred, tf.int64)
     y_true = tf.cast(y_true, tf.int64)
-    return tf.reduce_mean(tf.cast(tf.equal(y_pred, y_true), Widget.default.float_dtype))
+    return sum_up(tf.cast(tf.equal(y_pred, y_true), Widget.default.float_dtype))

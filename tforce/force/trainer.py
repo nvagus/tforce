@@ -84,14 +84,19 @@ class Alice(Trainer):
     """
 
     def run(self, steps, log_step=10, givens=None, callbacks=None):
-        assert steps % log_step == 0, 'Steps should be a multiple of the param log_step'
         callbacks = _make_iterable(callbacks)
         with _HideCursor():
             for i in range(1, steps + 1):
                 result = self._slot(givens=givens)
                 self._add_log(result)
                 if i % log_step == 0:
-                    _print_log(self._slot.name, self._slot.local_step, result, self._slot.labels, next_line=i == steps)
+                    _print_log(
+                        self._slot.name,
+                        self._slot.local_step,
+                        result,
+                        self._slot.labels,
+                        next_line=i+log_step > steps
+                    )
                 for call in callbacks:
                     call(step=self._slot.local_step, result=result, givens=givens)
         return self

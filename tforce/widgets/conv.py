@@ -6,13 +6,11 @@
 
 import tensorflow as tf
 
-from ..core import Widget, DeepWidget
-
-from .utils import HeNormalInitializer, ZerosInitializer
-
-from .utils import L2Regularizer, NoRegularizer
-from .utils import Filter, Bias
 from .utils import BatchNormWithScale
+from .utils import Filter, Bias
+from .utils import HeNormalInitializer, ZerosInitializer
+from .utils import L2Regularizer, NoRegularizer
+from ..core import Widget, DeepWidget
 
 
 class Conv(
@@ -260,22 +258,31 @@ class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
     def __init__(
             self, *channels,
             filter_height=None, filter_width=None, stride_height=None, stride_width=None,
-            block=None, **kwargs
+            block=None, input_channel=None, **kwargs
     ):
         super(DeepResidualConv, self).__init__(block, **kwargs)
-        self._channels = channels
+        self._channels = sum([channel] * times for channel, times in channels)
         self._filter_height = filter_height or self._block.default.stride_height
         self._filter_width = filter_width or self._block.default.stride_width
         self._stride_height = stride_height or self._block.default.stride_height
         self._stride_width = stride_width or self._block.default.stride_width
+        self._input_channel = input_channel or self._channels[0]
 
     def _build(self):
-        self._layers = [
-            self._block(
-                input_channel, output_channel,
-                self._filter_height, self._filter_width, self._stride_height, self._stride_width
-            ) for input_channel, output_channel in zip(self._channels, self._channels[1:])
-        ]
+        input_channels = [self._input_channel] + self._channels
+        first_layer = True
+        for input_channel, output_channel in zip(input_channels, self._channels):
+            if not first_layer and input_channel == output_channel:
+                self._layers.append(self._block(
+                    input_channel, output_channel,
+                    self._filter_height, self._filter_width, self._stride_height, self._stride_width
+                ))
+            else:
+                self._layers.append(self._block(
+                    input_channel, output_channel,
+                    self._filter_height, self._filter_width, 1, 1
+                ))
+            first_layer = False
 
     @property
     def channels(self):

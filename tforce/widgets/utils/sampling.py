@@ -135,7 +135,7 @@ class OneHot(Widget, name='one_hot', on_value=None, off_value=None):
         self._labels = labels
 
     def _setup(self, x):
-        return tf.one_hot(x, self._labels, self._on_value, self._off_value)
+        return tf.one_hot(x, self._labels, self._on_value, self._off_value, dtype=self.default.float_dtype)
 
     @classmethod
     def instance(cls, x, labels, on_value=None, off_value=None):

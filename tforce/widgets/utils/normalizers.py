@@ -9,10 +9,10 @@ import tensorflow as tf
 from ...core import Widget
 
 
-class MovingAverage(Widget, name='moving_average'):
-    def __init__(self, decay, initial=None, shape=None, **kwargs):
+class MovingAverage(Widget, name='moving_average', decay=0.99):
+    def __init__(self, decay=None, initial=None, shape=None, **kwargs):
         super(MovingAverage, self).__init__(**kwargs)
-        self._decay = decay
+        self._decay = decay or self.default.decay
         self._initial = initial
         self._shape = shape
 

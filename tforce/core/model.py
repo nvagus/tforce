@@ -164,7 +164,7 @@ class Model(
         self._data = None
         self._initializer = None
 
-    def setup(self, *data_streams):
+    def setup(self, *data_streams, **kwargs):
         """ Build the model with input data streams
         :param data_streams: the list of input data streams.
         """
@@ -174,11 +174,11 @@ class Model(
                 stream.setup()
             self._data = [stream.batch for stream in self._streams]
             with tf.variable_scope(self._name), tf.name_scope(self._scope):
-                self._setup(*self._data)
+                self._setup(*self._data, **kwargs)
                 self._initializer = tf.variables_initializer(var_list=self.global_variables)
         self._sess.run(self._initializer)
 
-    def _setup(self, *data_streams):
+    def _setup(self, *data_streams, **kwargs):
         """ Implement this method to use operators to build the graph.
         """
         raise NotImplementedError()
