@@ -14,7 +14,7 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
         super(MovingAverage, self).__init__(**kwargs)
         self._decay = decay or self.default.decay
         self._initial = initial
-        self._shape = shape
+        self._shape = shape or ()
 
     def _build(self):
         if self._initial is not None:
