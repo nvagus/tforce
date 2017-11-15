@@ -175,7 +175,7 @@ class Scope(DefaultChain):
         return tf.get_collection(tf.GraphKeys.SUMMARIES, self._scope)
 
 
-class Widget(Scope, name='widget', float_dtype=tf.float32):
+class Widget(Scope, name='widget', float_dtype=tf.float32, int_dtype=tf.int64):
     def __init__(self, **kwargs):
         super(Widget, self).__init__(**kwargs)
 

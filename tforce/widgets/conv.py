@@ -17,7 +17,7 @@ from .utils import BatchNormWithScale
 
 class Conv(
     Widget, name='conv',
-    filter_height=5, filter_width=5, stride_height=2, stride_width=2,
+    filter_height=5, filter_width=5, stride_height=2, stride_width=2, padding='SAME',
     filter_initializer=HeNormalInitializer, filter_regularizer=L2Regularizer,
     bias_initializer=ZerosInitializer, bias_regularizer=NoRegularizer
 ):
@@ -53,7 +53,7 @@ class Conv(
             input=x,
             filter=self._filter,
             strides=(1, self._stride_height, self._stride_width, 1),
-            padding='SAME',
+            padding=self.default.padding,
             data_format='NHWC'
         ) + self._bias
 
