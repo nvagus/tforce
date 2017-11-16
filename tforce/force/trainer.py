@@ -48,6 +48,7 @@ class Trainer(object):
 
     def __init__(self, slot: Slot):
         self._slot = slot
+        self._result = None
         self._fields = {field: [] for field in slot.labels}
 
     def run(self, *args, **kwargs):
@@ -60,6 +61,10 @@ class Trainer(object):
     @property
     def log(self):
         return {key: np.hstack(self._fields[key]) for key in self._fields}
+
+    @property
+    def result(self):
+        return self._result
 
     def save(self, filename):
         np.savez(filename, **self.log)
@@ -87,7 +92,7 @@ class Alice(Trainer):
         callbacks = _make_iterable(callbacks)
         with _HideCursor():
             for i in range(1, steps + 1):
-                result = self._slot(givens=givens)
+                self._result = result = self._slot(givens=givens)
                 self._add_log(result)
                 if i % log_step == 0:
                     _print_log(
@@ -111,7 +116,7 @@ class Bob(Trainer):
             result = self._slot(givens=givens)
             self._add_log(result)
         log = self.log
-        result = tuple(
+        self._result = result = tuple(
             np.average(log[key]) for key in self._slot.labels
         )
         _print_log(self._slot.name, self._slot.local_step, result, self._slot.labels, next_line=True)
