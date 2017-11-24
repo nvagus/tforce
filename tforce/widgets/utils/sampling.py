@@ -6,10 +6,11 @@
 
 import tensorflow as tf
 
+from . import image
 from ...core import Widget
 
 
-class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
+class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='VALID'):
     def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None, **kwargs):
         super(AvgPool, self).__init__(**kwargs)
         self._pool_height = pool_height or self.default.pool_height
@@ -27,7 +28,7 @@ class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_heigh
 
     @classmethod
     def instance(cls, x, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
-        return AvgPool(pool_height, pool_width, stride_height, stride_width)(x)
+        return cls(pool_height, pool_width, stride_height, stride_width)(x)
 
     @property
     def pool_height(self):
@@ -46,7 +47,23 @@ class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_heigh
         return self._stride_width
 
 
+class GlobalAveragePooling(AvgPool, name='global_avg_pool', stride_height=1, stride_width=1, padding='VALID'):
+    def __init__(self, input_height, input_width, **kwargs):
+        super(GlobalAveragePooling, self).__init__(input_height, input_width, **kwargs)
+
+    def _setup(self, x):
+        x = super(GlobalAveragePooling, self)._setup(x)
+        return image.to_flat(x)
+
+    @classmethod
+    def instance(cls, x, input_height=None, input_width=None, **kwargs):
+        input_height = input_height or x.shape[1]
+        input_width = input_width or x.shape[2]
+        return cls(input_height, input_width)(x)
+
+
 avg_pool = AvgPool.instance
+flat_pool = GlobalAveragePooling.instance
 
 
 class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
@@ -67,7 +84,7 @@ class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_heigh
 
     @classmethod
     def instance(cls, x, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
-        return AvgPool(pool_height, pool_width, stride_height, stride_width)(x)
+        return cls(pool_height, pool_width, stride_height, stride_width)(x)
 
     @property
     def pool_height(self):
@@ -105,11 +122,11 @@ class Dropout(Widget, name='dropout', keep=None):
         )
 
     def _setup(self, x):
-        dropout = tf.nn.dropout(x, self._keep_prob)
+        local_dropout = tf.nn.dropout(x, self._keep_prob)
         if self._alpha != 0.:
-            return tf.where(dropout == 0. and x != 0., dropout - self._alpha, x)
+            return tf.where(local_dropout == 0. and x != 0., local_dropout - self._alpha, x)
         else:
-            return dropout
+            return local_dropout
 
     @classmethod
     def instance(cls, x, keep_prob=0.5, alpha=0.):

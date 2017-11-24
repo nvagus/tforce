@@ -6,7 +6,7 @@
 
 from . import image
 from .activations import *
-from .initializer import *
+from .initializers import *
 from .loss import *
 from .normalizers import *
 from .parameters import *

@@ -241,6 +241,18 @@ class Widget(Scope, name='widget', float_dtype=tf.float32, int_dtype=tf.int64):
 
         return op_wrapper
 
+    @property
+    def to_keras(self):
+        _self = self
+
+        import keras
+
+        class KerasLayer(keras.layers.Layer):
+            def call(self, *args, **kwargs):
+                return _self(*args, **kwargs)
+
+        return KerasLayer()
+
 
 class DeepWidget(Widget, name='deep_widget', block=Widget):
     def __init__(self, block=None, **kwargs):

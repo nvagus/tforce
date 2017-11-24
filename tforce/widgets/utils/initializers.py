@@ -55,7 +55,8 @@ class HeNormalInitializer(Initializer, name='he_normal_initializer', call=HeNorm
 
 class HeUniform(VarianceScaling, fin=1., fout=0., scale=2.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
+        var = cls.get_variance(shape)
+        return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
 class HeUniformInitializer(Initializer, name='he_uniform_initializer', call=HeUniform):
@@ -73,7 +74,8 @@ class LecunNormalInitializer(Initializer, name='lecun_normal_initializer', call=
 
 class LecunUniform(VarianceScaling, fin=1., fout=0., scale=1.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
+        var = cls.get_variance(shape)
+        return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
 class LecunUniformInitializer(Initializer, name='lecun_uniform_initializer', call=LecunUniform):
@@ -91,7 +93,8 @@ class GlorotNormalInitializer(Initializer, name='glorot_normal_initializer', cal
 
 class GlorotUniform(VarianceScaling, fin=1., fout=1., scale=2.):
     def __new__(cls, shape, dtype):
-        return tf.random_uniform(shape, -3 * cls.get_variance(shape), 3 * cls.get_variance(shape))
+        var = cls.get_variance(shape)
+        return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
 class GlorotUniformInitializer(Initializer, name='glorot_uniform_initializer', call=GlorotUniform):

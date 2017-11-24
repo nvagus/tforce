@@ -94,7 +94,7 @@ class ConvBNS(Conv, name='stride_conv_bn_scale'):
 
     def _build(self):
         super(ConvBNS, self)._build()
-        self._bns = BatchNormWithScale()
+        self._bns = BatchNormWithScale([0, 1, 2], (self._output_channel,))
 
     def _setup(self, x):
         x = super(ConvBNS, self)._setup(x)
@@ -148,13 +148,13 @@ class DeepConv(DeepWidget, name='deep_conv', block=Conv):
 
 
 class ResidualConv(
-    DeepWidget, name='residual_conv', block=ConvBNS,
+    DeepWidget, name='residual_conv', block=Conv, norm=BatchNormWithScale,
     filter_height=3, filter_width=3, stride_height=2, stride_width=2
 ):
     def __init__(
             self, input_channel, output_channel,
             filter_height=None, filter_width=None, stride_height=None, stride_width=None,
-            block=None, **kwargs
+            block=None, norm=None, **kwargs
     ):
         super(ResidualConv, self).__init__(block, **kwargs)
         self._input_channel = input_channel
@@ -163,6 +163,7 @@ class ResidualConv(
         self._filter_width = filter_width or self.default.filter_width
         self._stride_height = stride_height or self.default.stride_height
         self._stride_width = stride_width or self.default.stride_width
+        self._norm = norm or self.default.norm
 
         def shortcut(x):
             return x
@@ -170,11 +171,25 @@ class ResidualConv(
         self._shortcut = shortcut
 
     def _build(self):
+        self._norms = []
         raise NotImplementedError()
 
     def _setup(self, x, *calls):
-        y = super(ResidualConv, self)._setup(x, *calls)
+        y = x
+        for layer, norm in zip(self._layers, self._norms):
+            y = norm(y)
+            for call in calls:
+                y = call(y)
+            y = layer(y)
         return self._shortcut(x) + y
+
+    @property
+    def norm(self):
+        return self._norm
+
+    @property
+    def norms(self):
+        return self._norms
 
     @property
     def shortcut(self):
@@ -220,10 +235,14 @@ class SimpleResidualConv(ResidualConv, name='simple_residual_conv'):
     def _build(self):
         self._layers = [
             self._block(self._input_channel, self._input_channel, self._filter_height, self._filter_width, 1, 1),
-            self._block(self._input_channel, self._input_channel, self._filter_height, self._filter_width,
+            self._block(self._input_channel, self._output_channel, self._filter_height, self._filter_width,
                         self._stride_height, self._stride_width),
         ]
-        if self._input_channel == self._output_channel or self._stride_height * self.stride_width == 1:
+        self._norms = [
+            self._norm([0, 1, 2], (self._input_channel,)),
+            self._norm([0, 1, 2], (self._input_channel,))
+        ]
+        if self._input_channel != self._output_channel or self._stride_height * self.stride_width != 1:
             self._shortcut = self._block(
                 self._input_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width
             )
@@ -248,22 +267,27 @@ class BottleNeckResidualConv(ResidualConv, name='bottle_neck_residual_conv', rat
             self._block(self._sample_channel, self._sample_channel, self._filter_height, self._filter_width, 1, 1),
             self._block(self._sample_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width)
         ]
-        if self._input_channel == self._output_channel or self._stride_height * self.stride_width == 1:
+        self._norms = [
+            self._norm([0, 1, 2], (self._input_channel,)),
+            self._norm([0, 1, 2], (self._sample_channel,)),
+            self._norm([0, 1, 2], (self._sample_channel,))
+        ]
+        if self._input_channel != self._output_channel or self._stride_height * self.stride_width != 1:
             self._shortcut = self._block(
                 self._input_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width
             )
 
 
-class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
+class DeepResidualConv(DeepWidget, name='deep_residual_conv', block=SimpleResidualConv):
     def __init__(
             self, *channels,
             filter_height=None, filter_width=None, stride_height=None, stride_width=None,
             block=None, input_channel=None, **kwargs
     ):
         super(DeepResidualConv, self).__init__(block, **kwargs)
-        self._channels = sum([channel] * times for channel, times in channels)
-        self._filter_height = filter_height or self._block.default.stride_height
-        self._filter_width = filter_width or self._block.default.stride_width
+        self._channels = sum([[channel] * times for channel, times in channels], [])
+        self._filter_height = filter_height or self._block.default.filter_height
+        self._filter_width = filter_width or self._block.default.filter_width
         self._stride_height = stride_height or self._block.default.stride_height
         self._stride_width = stride_width or self._block.default.stride_width
         self._input_channel = input_channel or self._channels[0]
@@ -272,7 +296,7 @@ class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
         input_channels = [self._input_channel] + self._channels
         first_layer = True
         for input_channel, output_channel in zip(input_channels, self._channels):
-            if not first_layer and input_channel == output_channel:
+            if not first_layer and input_channel != output_channel:
                 self._layers.append(self._block(
                     input_channel, output_channel,
                     self._filter_height, self._filter_width, self._stride_height, self._stride_width
@@ -283,6 +307,11 @@ class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
                     self._filter_height, self._filter_width, 1, 1
                 ))
             first_layer = False
+
+    def _setup(self, x, *calls):
+        for layer in self._layers:
+            x = layer(x, *calls)
+        return x
 
     @property
     def channels(self):

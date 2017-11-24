@@ -6,7 +6,7 @@
 
 import tensorflow as tf
 
-from .initializer import ZerosInitializer
+from .initializers import ZerosInitializer
 from .regularizers import NoRegularizer
 from ...core import Widget
 

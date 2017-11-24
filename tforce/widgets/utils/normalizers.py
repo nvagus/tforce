@@ -18,10 +18,10 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
 
     def _build(self):
         if self._initial is not None:
-            self._obj = tf.Variable(self._initial)
+            self._obj = tf.Variable(tf.constant(self._initial, shape=self._shape, dtype=self.default.float_dtype))
         else:
             self._obj = tf.Variable(tf.zeros(shape=self._shape, dtype=self.default.float_dtype))
-            self._lambda = tf.Variable(tf.constant(1., dtype=self.default.float_dtype))
+            self._lambda = tf.Variable(tf.ones((), dtype=self.default.float_dtype))
 
     def _setup(self, val, shift=None):
         new_obj = self._obj * self._decay + val * (1 - self._decay)
@@ -44,21 +44,33 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
         return tf.placeholder_with_default(tf.constant(True, dtype=tf.bool), shape=())
 
 
-class BatchNorm(Widget, name='batch_norm', decay=0.999, epsilon=1e-8, shift=None):
-    def __init__(self, **kwargs):
+class BatchNorm(Widget, name='batch_norm', decay=0.99, epsilon=1e-3, shift=None):
+    def __init__(self, axes, shape, **kwargs):
         super(BatchNorm, self).__init__(**kwargs)
         if BatchNorm.default.shift is None:
             BatchNorm.default.shift = MovingAverage.new_shift()
+        self._axes = axes
+        self._shape = shape
 
     def _build(self):
-        self._pop_mean = MovingAverage(initial=0., decay=self.default.decay)
-        self._pop_var = MovingAverage(initial=1., decay=self.default.decay)
+        self._pop_mean = MovingAverage(initial=0., shape=self._shape, decay=self.default.decay)
+        self._pop_var = MovingAverage(initial=1., shape=self._shape, decay=self.default.decay)
 
     def _setup(self, x):
-        batch_mean, batch_var = tf.nn.moments(x, tuple(range(len(x.get_shape()))))
+        batch_mean, batch_var = tf.nn.moments(x, self.axes)
         global_mean = self._pop_mean(batch_mean, shift=self.default.shift)
         global_var = self._pop_var(batch_var, shift=self.default.shift)
-        return (x - global_mean) * tf.rsqrt(global_var + self.default.epsilon)
+        train = (x - batch_mean) * tf.rsqrt(batch_var + self.default.epsilon)
+        valid = (x - global_mean) * tf.rsqrt(global_var + self.default.epsilon)
+        return tf.cond(self.default.shift, lambda: train, lambda: valid)
+
+    @property
+    def axes(self):
+        return self._axes
+
+    @property
+    def shape(self):
+        return self._shape
 
     @property
     def pop_mean(self):
@@ -69,18 +81,21 @@ class BatchNorm(Widget, name='batch_norm', decay=0.999, epsilon=1e-8, shift=None
         return self._pop_var
 
 
-class Scale(Widget):
-    default_name = 'scale'
-
-    def __init__(self, **kwargs):
+class Scale(Widget, name='scale'):
+    def __init__(self, shape, **kwargs):
         super(Scale, self).__init__(**kwargs)
+        self._shape = shape
 
     def _build(self):
-        self._mean = tf.Variable(tf.constant(0., dtype=self.default.float_dtype))
-        self._var = tf.Variable(tf.constant(1., dtype=self.default.float_dtype))
+        self._mean = tf.Variable(tf.zeros(shape=self._shape, dtype=self.default.float_dtype))
+        self._var = tf.Variable(tf.ones(shape=self._shape, dtype=self.default.float_dtype))
 
     def _setup(self, x):
         return (x + self._mean) * self._var
+
+    @property
+    def shape(self):
+        return self._shape
 
     @property
     def mean(self):
@@ -91,18 +106,26 @@ class Scale(Widget):
         return self._var
 
 
-class BatchNormWithScale(Widget):
-    default_name = 'batch_norm_with_scale'
-
-    def __init__(self, **kwargs):
+class BatchNormWithScale(Widget, name='batch_norm_with_scale'):
+    def __init__(self, axes, shape, **kwargs):
         super(BatchNormWithScale, self).__init__(**kwargs)
+        self._axes = axes
+        self._shape = shape
 
     def _build(self):
-        self._bn = BatchNorm()
-        self._scale = Scale()
+        self._bn = BatchNorm(self._axes, self._shape)
+        self._scale = Scale(self._shape)
 
     def _setup(self, x):
         return self._scale(self._bn(x))
+
+    @property
+    def axes(self):
+        return self._axes
+
+    @property
+    def shape(self):
+        return self._shape
 
     @property
     def bn(self):

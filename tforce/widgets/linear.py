@@ -56,7 +56,7 @@ class LinearBNS(
         super(LinearBNS, self).__init__(input_depth, output_depth, **kwargs)
 
     def _build(self):
-        self._bns = BatchNormWithScale()
+        self._bns = BatchNormWithScale([0], (self._output_depth,))
 
     def _setup(self, x):
         x = super(LinearBNS, self)._setup(x)
