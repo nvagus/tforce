@@ -20,7 +20,7 @@ class _Model(t4.Model):
 
         conv = t4.ConvBNS(3, 64, 7, 7)
         residual = t4.DeepResidualConv(
-            (128, 2), (256, 2), (512, 2), (1024, 2),
+            (128, 3), (256, 4), (512, 6), (1024, 3),
             input_channel=64, block=t4.SimpleResidualConv
         )
         lin = t4.Linear(1024, 10)
@@ -69,11 +69,12 @@ def main():
         'image', 'label'
     )
     model.setup(stream)
-    with model.using_workers(), model.using_summaries():
-        stream.option = 'train'
-        t4.trainer.Alice(model.train).run(1000, 1)
-        stream.option = 'valid'
-        t4.trainer.Bob(model.valid).run(200)
+    with model.using_workers():
+        for _ in range(100):
+            stream.option = 'train'
+            t4.trainer.Alice(model.train).run(1000, 1)
+            stream.option = 'valid'
+            t4.trainer.Bob(model.valid).run(200)
     return 0
 
 

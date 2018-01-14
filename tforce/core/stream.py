@@ -100,6 +100,14 @@ class AbstractDataSrc(object):
         raise PermissionError('This data source is not modifiable')
 
 
+class DataSrc(AbstractDataSrc):
+    def __init__(self, **data):
+        self._data = data
+
+    def load(self, *keys):
+        return DataObj({key: self._data[key] for key in keys})
+
+
 class NpzDataSrc(AbstractDataSrc):
     def __init__(self, filename):
         self._filename = filename
