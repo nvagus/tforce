@@ -29,9 +29,9 @@ class _Model(t4.Model):
         lin = t4.Linear(128, 10)
 
         image = t4.image.randomize_crop(image, switch=switch)
+        image = t4.image.randomize_flip(image, horizontal=0.5, switch=switch)
         dense = t4.image.to_dense(image, std=64)
-        # dense = t4.image.randomize_shift(dense, 10, 5, 5, switch)
-        dense = t4.image.randomize_flip(dense, horizontal=0.5, switch=switch)
+        dense = t4.image.randomize_shift(dense, 10, 5, 5, switch)
 
         dense = conv(dense)
         dense = t4.relu(dense)
