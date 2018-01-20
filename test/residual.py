@@ -19,7 +19,7 @@ class _Model(t4.Model):
         label = data['label']
 
         t4.Regularizer.default.rate = 0.0005
-
+        switch = tf.placeholder_with_default(True, ())
         dropout = t4.Dropout(keep_prob=0.7)
         conv = t4.ConvBNS(3, 16, 3, 3, 1, 1)
         residual = t4.DeepResidualConv(
@@ -28,8 +28,10 @@ class _Model(t4.Model):
         )
         lin = t4.Linear(128, 10)
 
-        dense = t4.image.to_dense(image)
-        dense = t4.image.randomize_shift(dense, 10, 5, 5)
+        image = t4.image.randomize_crop(image, switch=switch)
+        dense = t4.image.to_dense(image, std=64)
+        # dense = t4.image.randomize_shift(dense, 10, 5, 5, switch)
+        dense = t4.image.randomize_flip(dense, horizontal=0.5, switch=switch)
 
         dense = conv(dense)
         dense = t4.relu(dense)
@@ -66,7 +68,8 @@ class _Model(t4.Model):
             outputs=(loss, acc),
             givens={
                 t4.BatchNorm.default.shift: False,
-                dropout.default.keep: True
+                dropout.default.keep: True,
+                switch: False
             }
         )
 
