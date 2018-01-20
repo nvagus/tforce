@@ -18,35 +18,47 @@ class _Model(t4.Model):
         image = data['image']
         label = data['label']
 
-        conv = t4.ConvBNS(3, 64, 7, 7)
+        t4.Regularizer.default.rate = 0.0005
+
+        dropout = t4.Dropout(keep_prob=0.7)
+        conv = t4.ConvBNS(3, 16, 3, 3, 1, 1)
         residual = t4.DeepResidualConv(
-            (128, 3), (256, 4), (512, 6), (1024, 3),
-            input_channel=64, block=t4.SimpleResidualConv
+            (32, 6), (64, 6), (128, 6),
+            input_channel=16, block=t4.SimpleResidualConv
         )
-        lin = t4.Linear(1024, 10)
+        lin = t4.Linear(128, 10)
 
         dense = t4.image.to_dense(image)
-        t4.BatchNorm.default.shift = t4.MovingAverage.new_shift()
-        # pred = ResnetBuilder.build_resnet_18((3, 32, 32), 10)(dense)
+        dense = t4.image.randomize_shift(dense, 10, 5, 5)
+
         dense = conv(dense)
         dense = t4.relu(dense)
-        dense = t4.max_pool(dense, 3, 3, 2, 2)
-        dense = residual(dense, t4.relu)
-        dense = t4.BatchNormWithScale([0, 1, 2], (1024,))(dense)
+
+        dense = residual(dense, t4.relu, dropout=dropout)
+        dense = t4.batch_normalization(dense)
         dense = t4.relu(dense)
+
         flat = t4.flat_pool(dense)
         pred = tf.nn.softmax(lin(flat))
 
-        loss = t4.categorical_cross_entropy_loss(pred, tf.one_hot(label, 10, dtype=t4.Widget.default.float_dtype))
-        acc = t4.correct_prediction(tf.argmax(pred, axis=1), label)
+        loss = t4.categorical_cross_entropy_loss(pred, t4.OneHot(10)(label))
+        acc = t4.correct_prediction(t4.argmax(pred), label)
 
-        optimizer = tf.train.AdamOptimizer().minimize(loss)
+        loss_ma = t4.MovingAverage()(loss)
+        acc_ma = t4.MovingAverage()(acc)
+
+        self.lr = lr = tf.placeholder(t4.Widget.default.float_dtype)
+        regularizers = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+
+        optimizer = tf.train.MomentumOptimizer(lr, 0.9).minimize(loss + regularizers)
         
         self.train = self._add_slot(
             'train',
-            outputs=(loss, acc),
+            outputs=(loss_ma, acc_ma, regularizers),
             updates=optimizer,
-            # summaries=residual.summaries
+            givens={
+                dropout.default.keep: True
+            }
         )
 
         self.valid = self._add_slot(
@@ -54,6 +66,7 @@ class _Model(t4.Model):
             outputs=(loss, acc),
             givens={
                 t4.BatchNorm.default.shift: False,
+                dropout.default.keep: True
             }
         )
 
@@ -66,15 +79,22 @@ def main():
     model = _Model()
     stream = t4.MultiNpzDataStream(
         {'train': '/data/plan/cifar-10/cifar-10-train.npz', 'valid': '/data/plan/cifar-10/cifar-10-valid.npz'},
-        'image', 'label'
+        'image', 'label',  dequeue_batch=128
     )
     model.setup(stream)
+    lr = 0.1
     with model.using_workers():
-        for _ in range(100):
+        for _ in range(200):
+            if _ in [60, 120, 160]:
+                lr *= 0.2
             stream.option = 'train'
-            t4.trainer.Alice(model.train).run(1000, 1)
+            t4.trainer.Alice(model.train).run(
+                stream.data['train'].size // stream.batch_size, 1, givens={model.lr: lr}
+            )
             stream.option = 'valid'
-            t4.trainer.Bob(model.valid).run(200)
+            t4.trainer.Bob(model.valid).run(
+                stream.data['valid'].size // stream.batch_size
+            )
     return 0
 
 

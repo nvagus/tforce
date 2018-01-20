@@ -134,3 +134,8 @@ class BatchNormWithScale(Widget, name='batch_norm_with_scale'):
     @property
     def scale(self):
         return self._scale
+
+
+@Widget.from_op
+def batch_normalization(x, axes=None, shape=None):
+    return BatchNormWithScale(axes or list(range(len(x.shape) - 1)), shape or x.shape[-1:])(x)

@@ -174,7 +174,8 @@ class ResidualConv(
         self._norms = []
         raise NotImplementedError()
 
-    def _setup(self, x, *calls, first=False):
+    def _setup(self, x, *calls, dropout=None, first=False):
+        dropout = dropout or (lambda z: z)
         y = x
         for layer, norm in zip(self._layers, self._norms):
             if first:
@@ -184,6 +185,8 @@ class ResidualConv(
                 for call in calls:
                     y = call(y)
             y = layer(y)
+            if layer is not self._layers[-1]:
+                y = dropout(y)
         return self._shortcut(x) + y
 
     @property
@@ -311,8 +314,8 @@ class DeepResidualConv(DeepWidget, name='deep_residual_conv', block=SimpleResidu
                 ))
             first_layer = False
 
-    def _setup(self, x, *calls):
-        x = self._layers[0](x, *calls, first=True)
+    def _setup(self, x, *calls, dropout=None):
+        x = self._layers[0](x, *calls, dropout=None, first=True)
         for layer in self._layers[1:]:
             x = layer(x, *calls)
         return x

@@ -272,6 +272,14 @@ class DataStream(AbstractDataStream, workers=2):
             yield pool
 
     @property
+    def data(self):
+        return self._data
+
+    @property
+    def batch_size(self):
+        return self._dequeue_batch
+
+    @property
     def buffer(self):
         return self._buffer
 
@@ -339,6 +347,14 @@ class MultiDataStream(AbstractDataStream):
 
     def next(self):
         self._option.next()
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def batch_size(self):
+        return self._dequeue_batch
 
     @property
     def buffer(self):
