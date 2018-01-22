@@ -51,11 +51,11 @@ def main():
         'image', 'label'
     )
     model.setup(stream)
-    with model.using_workers(), model.using_summaries():
-        stream.option = 'train'
-        t4.trainer.Alice(model.train).run(1200, 1)
-        stream.option = 'valid'
-        t4.trainer.Bob(model.valid).run(200)
+    with model.using_workers():
+        stream.selected = 'train'
+        t4.trainer.Alice(model.train).run(600, 1)
+        stream.selected = 'valid'
+        t4.trainer.Bob(model.valid).run()
     return 0
 
 

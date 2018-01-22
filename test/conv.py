@@ -19,13 +19,12 @@ class Model(t4.Model):
 
         t4.Conv.default.filter_initializer = t4.GlorotNormalInitializer
         conv = t4.DeepConv(
-            1, 64, 1024,
-            # block=t4.ConvBNS
+            1, 64, 1024
         )
         lin = t4.Linear(7 * 7 * 1024, 10)
 
         dense = t4.image.to_dense(image)
-        flat = t4.image.to_flat(conv(dense))
+        flat = t4.image.to_flat(conv(dense, t4.relu))
         pred = tf.nn.softmax(lin(flat))
 
         loss = t4.categorical_cross_entropy_loss(pred, tf.one_hot(label, 10, dtype=t4.Widget.default.float_dtype))
@@ -59,10 +58,10 @@ def main():
     )
     model.setup(stream)
     with model.using_workers():
-        stream.option = 'train'
-        t4.trainer.Alice(model.train).run(1200)
-        stream.option = 'valid'
-        t4.trainer.Bob(model.valid).run(200)
+        stream.selected = 'train'
+        t4.trainer.Alice(model.train).run(600)
+        stream.selected = 'valid'
+        t4.trainer.Bob(model.valid, 10000).run()
     return 0
 
 

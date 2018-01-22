@@ -1,9 +1,44 @@
 #!/usr/bin/env python3
 # -- coding: utf8 --
 # :author: nvagus
-# :time: 11/6/17-2:54 PM
-# :package: tforce.core
+# :time: 1/21/18-11:30 AM
+# :package: tforce
 
+
+# q0 = tf.PaddingFIFOQueue(10, [tf.float32, tf.float32], [(), ()], ['a', 'b'])
+# q1 = tf.PaddingFIFOQueue(10, [tf.float32, tf.float32, tf.float32], [(), (), ()], ['a', 'b', 'c'])
+# index = tf.placeholder_with_default(1, ())
+# q = tf.PaddingFIFOQueue.from_list(index, [q0, q1])
+# size = tf.placeholder(tf.int32, ())
+# dequeue_op = q.dequeue_many(size)
+#
+# with tf.Session() as sess:
+#     def enqueue0(a, b):
+#         sess.run(q0.enqueue({'a': a, 'b': b}))
+#
+#
+#     def enqueue1(a, b):
+#         sess.run(q1.enqueue({'a': a, 'b': b}))
+#
+#
+#     def dequeue(i, n):
+#         print(sess.run(dequeue_op, feed_dict={index: i, size: n}))
+#
+#     enqueue0(1, 2)
+#     enqueue0(2, 3)
+#     enqueue1(5, 6)
+#     enqueue1(7, 8)
+#     enqueue1(4, 2)
+#
+#     t = tf.constant([[12.], [6.]])
+#     y = t * dequeue_op['a']
+#
+#     def run(i, n):
+#         print(sess.run(y, feed_dict={index: i, size: n}))
+#
+#     import code
+#
+#     code.interact(local=locals())
 
 import inspect
 import itertools
@@ -43,15 +78,7 @@ class Scope(type):
         graph = tf.get_default_graph()
         Scope.__scopes__[graph] = scopes = Scope.__scopes__.get(graph) or set()
         outer_scope = graph.get_name_scope()
-        if 'name' in kwargs:
-            name = kwargs.pop('name')
-        elif isinstance(cls, Root):
-            if hasattr(cls.default, 'name'):
-                name = cls.default.name
-            else:
-                name = cls.__name__
-        else:
-            name = cls.__name__
+        name = kwargs.pop('name') if 'name' in kwargs else cls.__name__
 
         obj = super(Scope, cls).__call__(*args, **kwargs)
 
@@ -202,26 +229,6 @@ class Widget(Root, metaclass=Scope, float_dtype=tf.float32, int_dtype=tf.int64):
         return KerasLayer()
 
 
-class DeepWidget(Widget, block=Widget):
-    def __init__(self, block=None):
-        super(DeepWidget, self).__init__()
-        self._layers = []
-        self._block = block or self.default.block
+import code
 
-    def _build(self):
-        self._layers = []
-
-    def _setup(self, x, *calls):
-        for layer in self._layers[:-1]:
-            x = layer(x)
-            for call in calls:
-                x = call(x)
-        return self._layers[-1](x)
-
-    @property
-    def layers(self):
-        return self._layers
-
-    @property
-    def block(self):
-        return self._block
+code.interact(local=locals())

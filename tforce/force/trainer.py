@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 
-from ..core import Slot
+from ..core import Slot, Root
 from ..core.private import make_iterable as _make_iterable
 
 
@@ -42,13 +42,14 @@ def callback(f):
     return _wrapper
 
 
-class Trainer(object):
+class Trainer(Root, batch_size=100):
     """ Trainer is someone who helps for the training
     """
 
-    def __init__(self, slot: Slot):
+    def __init__(self, slot: Slot, batch_size=None):
         self._slot = slot
         self._result = None
+        self._batch_size = batch_size or self.default.batch_size
         self._fields = {field: [] for field in slot.labels}
 
     def run(self, *args, **kwargs):
@@ -90,6 +91,8 @@ class Alice(Trainer):
 
     def run(self, steps, log_step=10, givens=None, callbacks=None):
         callbacks = _make_iterable(callbacks)
+        givens = givens or {}
+        givens.update(self.slot.model.givens(self._batch_size))
         with _HideCursor():
             for i in range(1, steps + 1):
                 self._result = result = self._slot(givens=givens)
@@ -97,27 +100,24 @@ class Alice(Trainer):
                 if i % log_step == 0:
                     _print_log(
                         self._slot.name,
-                        self._slot.local_step,
+                        self._slot.step,
                         result,
                         self._slot.labels,
-                        next_line=i+log_step > steps
+                        next_line=i + log_step > steps
                     )
                 for call in callbacks:
-                    call(step=self._slot.local_step, result=result, givens=givens)
+                    call(step=self._slot.step, result=result, givens=givens)
         return self
 
 
 class Bob(Trainer):
-    """ Bob does validation, who computing average performance of output targets.
+    """ Bob does validation, who computes only one batch.
     """
 
-    def run(self, steps, givens=None):
-        for _ in range(steps):
-            result = self._slot(givens=givens)
-            self._add_log(result)
-        log = self.log
-        self._result = result = tuple(
-            np.average(log[key]) for key in self._slot.labels
-        )
-        _print_log(self._slot.name, self._slot.local_step, result, self._slot.labels, next_line=True)
+    def run(self, givens=None):
+        givens = givens or {}
+        givens.update(self.slot.model.givens(self._batch_size))
+        self._result = result = self._slot(givens=givens)
+        self._add_log(result)
+        _print_log(self._slot.name, self._slot.step, result, self._slot.labels, next_line=True)
         return self

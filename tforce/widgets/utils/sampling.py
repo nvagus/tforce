@@ -11,8 +11,8 @@ from ...core import Widget
 
 
 class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='VALID'):
-    def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None, **kwargs):
-        super(AvgPool, self).__init__(**kwargs)
+    def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
+        super(AvgPool, self).__init__()
         self._pool_height = pool_height or self.default.pool_height
         self._pool_width = pool_width or self.default.pool_width
         self._stride_height = stride_height or self.default.stride_height
@@ -48,8 +48,8 @@ class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_heigh
 
 
 class GlobalAveragePooling(AvgPool, name='global_avg_pool', stride_height=1, stride_width=1, padding='VALID'):
-    def __init__(self, input_height, input_width, **kwargs):
-        super(GlobalAveragePooling, self).__init__(input_height, input_width, **kwargs)
+    def __init__(self, input_height, input_width):
+        super(GlobalAveragePooling, self).__init__(input_height, input_width)
 
     def _setup(self, x):
         x = super(GlobalAveragePooling, self)._setup(x)
@@ -67,8 +67,8 @@ flat_pool = GlobalAveragePooling.instance
 
 
 class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
-    def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None, **kwargs):
-        super(MaxPool, self).__init__(**kwargs)
+    def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
+        super(MaxPool, self).__init__()
         self._pool_height = pool_height or self.default.pool_height
         self._pool_width = pool_width or self.default.pool_width
         self._stride_height = stride_height or self.default.stride_height
@@ -106,9 +106,9 @@ class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_heigh
 max_pool = MaxPool.instance
 
 
-class Dropout(Widget, name='dropout', keep=None):
-    def __init__(self, keep_prob=0.5, alpha=0., **kwargs):
-        super(Dropout, self).__init__(**kwargs)
+class Dropout(Widget, keep=None):
+    def __init__(self, keep_prob=0.5, alpha=0.):
+        super(Dropout, self).__init__()
         self._keep_prob = keep_prob
         self._alpha = alpha
 
@@ -145,8 +145,8 @@ dropout = Dropout.instance
 
 
 class OneHot(Widget, name='one_hot', on_value=None, off_value=None):
-    def __init__(self, labels, on_value=None, off_value=None, **kwargs):
-        super(OneHot, self).__init__(**kwargs)
+    def __init__(self, labels, on_value=None, off_value=None):
+        super(OneHot, self).__init__()
         self._on_value = on_value or self.default.on_value
         self._off_value = off_value or self.default.off_value
         self._labels = labels
@@ -175,8 +175,8 @@ one_hot = OneHot.instance
 
 
 class ArgMax(Widget, name='arg_max', axis=1):
-    def __init__(self, axis=None, **kwargs):
-        super(ArgMax, self).__init__(**kwargs)
+    def __init__(self, axis=None):
+        super(ArgMax, self).__init__()
         self._axis = axis or self.default.axis
 
     def _setup(self, x):
@@ -195,8 +195,8 @@ argmax = ArgMax.instance
 
 
 class ArgMin(Widget, name='arg_min', axis=1):
-    def __init__(self, axis=None, **kwargs):
-        super(ArgMin, self).__init__(**kwargs)
+    def __init__(self, axis=None):
+        super(ArgMin, self).__init__()
         self._axis = axis or self.default.axis
 
     def _setup(self, x):

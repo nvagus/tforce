@@ -7,11 +7,11 @@
 import numpy as np
 import tensorflow as tf
 
-from ...core import DefaultChain
+from ...core import Root
 from ...core import Widget
 
 
-class Initializer(Widget, name='initializer'):
+class Initializer(Widget):
     def __init__(self):
         super(Initializer, self).__init__()
         if not hasattr(self, '_f'):
@@ -24,15 +24,15 @@ class Initializer(Widget, name='initializer'):
         return self._f(shape=shape, dtype=dtype)
 
 
-class ZerosInitializer(Initializer, name='zeros_initializer', call=tf.zeros):
+class ZerosInitializer(Initializer, call=tf.zeros):
     pass
 
 
-class OnesInitializer(Initializer, name='ones_initializer', call=tf.ones):
+class OnesInitializer(Initializer, call=tf.ones):
     pass
 
 
-class VarianceScaling(DefaultChain, fin=1., fout=1., scale=1.):
+class VarianceScaling(Root, fin=1., fout=1., scale=1.):
     @classmethod
     def get_variance(cls, shape):
         prod = np.prod(shape[:-2])
@@ -49,7 +49,7 @@ class HeNormal(VarianceScaling, fin=1., fout=0., scale=2.):
         return tf.truncated_normal(stddev=cls.get_variance(shape), shape=shape, dtype=dtype)
 
 
-class HeNormalInitializer(Initializer, name='he_normal_initializer', call=HeNormal):
+class HeNormalInitializer(Initializer, call=HeNormal):
     pass
 
 
@@ -59,7 +59,7 @@ class HeUniform(VarianceScaling, fin=1., fout=0., scale=2.):
         return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
-class HeUniformInitializer(Initializer, name='he_uniform_initializer', call=HeUniform):
+class HeUniformInitializer(Initializer, call=HeUniform):
     pass
 
 
@@ -68,7 +68,7 @@ class LecunNormal(VarianceScaling, fin=1., fout=0., scale=1.):
         return tf.truncated_normal(stddev=cls.get_variance(shape), shape=shape, dtype=dtype)
 
 
-class LecunNormalInitializer(Initializer, name='lecun_normal_initializer', call=LecunNormal):
+class LecunNormalInitializer(Initializer, call=LecunNormal):
     pass
 
 
@@ -78,7 +78,7 @@ class LecunUniform(VarianceScaling, fin=1., fout=0., scale=1.):
         return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
-class LecunUniformInitializer(Initializer, name='lecun_uniform_initializer', call=LecunUniform):
+class LecunUniformInitializer(Initializer, call=LecunUniform):
     pass
 
 
@@ -87,7 +87,7 @@ class GlorotNormal(VarianceScaling, fin=1., fout=1., scale=2.):
         return tf.truncated_normal(stddev=cls.get_variance(shape), shape=shape, dtype=dtype)
 
 
-class GlorotNormalInitializer(Initializer, name='glorot_normal_initializer', call=GlorotNormal):
+class GlorotNormalInitializer(Initializer, call=GlorotNormal):
     pass
 
 
@@ -97,5 +97,5 @@ class GlorotUniform(VarianceScaling, fin=1., fout=1., scale=2.):
         return tf.random_uniform(shape, -3 * var, 3 * var)
 
 
-class GlorotUniformInitializer(Initializer, name='glorot_uniform_initializer', call=GlorotUniform):
+class GlorotUniformInitializer(Initializer, call=GlorotUniform):
     pass

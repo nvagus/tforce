@@ -10,16 +10,15 @@ from .utils import HeUniformInitializer, ZerosInitializer
 from .utils import L2Regularizer, NoRegularizer
 from .utils import Weight, Bias
 from ..core import Widget, DeepWidget
-from .utils import BatchNormWithScale
 
 
 class Linear(
-    Widget, name='linear',
+    Widget,
     weight_initializer=HeUniformInitializer, weight_regularizer=L2Regularizer,
     bias_initializer=ZerosInitializer, bias_regularizer=NoRegularizer
 ):
-    def __init__(self, input_depth, output_depth, **kwargs):
-        super(Linear, self).__init__(**kwargs)
+    def __init__(self, input_depth, output_depth):
+        super(Linear, self).__init__()
         self._input_depth = input_depth
         self._output_depth = output_depth
 
@@ -38,7 +37,9 @@ class Linear(
         )
 
     def _setup(self, x):
-        return tf.tensordot(x, self._weight, axes=1) + self._bias
+        y = tf.tensordot(x, self._weight, axes=1) + self._bias
+        y.set_shape((*x.get_shape()[:-1], self._output_depth))
+        return y
 
     @property
     def weight(self):
@@ -49,29 +50,11 @@ class Linear(
         return self._bias
 
 
-class LinearBNS(
-    Linear, name='linear_bn_scale'
-):
-    def __init__(self, input_depth, output_depth, **kwargs):
-        super(LinearBNS, self).__init__(input_depth, output_depth, **kwargs)
-
-    def _build(self):
-        self._bns = BatchNormWithScale([0], (self._output_depth,))
-
-    def _setup(self, x):
-        x = super(LinearBNS, self)._setup(x)
-        return self._bns(x)
-
-    @property
-    def bns(self):
-        return self._bns
-
-
 class DeepLinear(
     DeepWidget, name='deep_linear', block=Linear
 ):
-    def __init__(self, *depths, block=None, **kwargs):
-        super(DeepLinear, self).__init__(block, **kwargs)
+    def __init__(self, *depths, block=None):
+        super(DeepLinear, self).__init__(block)
         assert len(depths) >= 2, 'At least two depths should be given'
         self._depths = depths
 

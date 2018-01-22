@@ -10,9 +10,9 @@ import tensorflow as tf
 import tforce as t4
 
 
-class _Model(t4.Model):
+class Model(t4.Model):
     def __init__(self):
-        super(_Model, self).__init__()
+        super(Model, self).__init__()
 
     def _setup(self, data):
         image = data['image']
@@ -21,7 +21,7 @@ class _Model(t4.Model):
         t4.Regularizer.default.rate = 0.0005
         switch = tf.placeholder_with_default(True, ())
         dropout = t4.Dropout(keep_prob=0.7)
-        conv = t4.ConvBNS(3, 16, 3, 3, 1, 1)
+        conv = t4.Conv(3, 16, 3, 3, 1, 1)
         residual = t4.DeepResidualConv(
             (32, 6), (64, 6), (128, 6),
             input_channel=16, block=t4.SimpleResidualConv
@@ -31,12 +31,12 @@ class _Model(t4.Model):
         image = t4.image.randomize_crop(image, switch=switch)
         image = t4.image.randomize_flip(image, horizontal=0.5, switch=switch)
         dense = t4.image.to_dense(image, std=64)
-        dense = t4.image.randomize_shift(dense, 10, 5, 5, switch)
 
         dense = conv(dense)
+        dense = t4.batch_normalization(dense)
         dense = t4.relu(dense)
 
-        dense = residual(dense, t4.relu, dropout=dropout)
+        dense = residual(dense, t4.batch_normalization, t4.relu, dropout=dropout)
         dense = t4.batch_normalization(dense)
         dense = t4.relu(dense)
 
@@ -50,17 +50,14 @@ class _Model(t4.Model):
         acc_ma = t4.MovingAverage()(acc)
 
         self.lr = lr = tf.placeholder(t4.Widget.default.float_dtype)
-        regularizers = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+        regularizers = tf.reduce_sum(self.losses)
 
         optimizer = tf.train.MomentumOptimizer(lr, 0.9).minimize(loss + regularizers)
-        
+
         self.train = self._add_slot(
             'train',
             outputs=(loss_ma, acc_ma, regularizers),
-            updates=optimizer,
-            givens={
-                dropout.default.keep: True
-            }
+            updates=optimizer
         )
 
         self.valid = self._add_slot(
@@ -79,25 +76,24 @@ class _Model(t4.Model):
 @t4.main.gpu
 @t4.main.end
 def main():
-    model = _Model()
+    model = Model()
     stream = t4.MultiNpzDataStream(
         {'train': '/data/plan/cifar-10/cifar-10-train.npz', 'valid': '/data/plan/cifar-10/cifar-10-valid.npz'},
-        'image', 'label',  dequeue_batch=128
+        'image', 'label'
     )
     model.setup(stream)
     lr = 0.1
     with model.using_workers():
-        for _ in range(200):
-            if _ in [60, 120, 160]:
+        for epoch in range(200):
+            if epoch in [60, 120, 160]:
                 lr *= 0.2
-            stream.option = 'train'
+            print(f'epoch {epoch} ' + '-' * 100)
+            stream.selected = 'train'
             t4.trainer.Alice(model.train).run(
-                stream.data['train'].size // stream.batch_size, 1, givens={model.lr: lr}
+                stream.data['train'].size // t4.trainer.Alice.default.batch_size, 1, givens={model.lr: lr}
             )
-            stream.option = 'valid'
-            t4.trainer.Bob(model.valid).run(
-                stream.data['valid'].size // stream.batch_size
-            )
+            stream.selected = 'valid'
+            t4.trainer.Bob(model.valid, 10000).run()
     return 0
 
 

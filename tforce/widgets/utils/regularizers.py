@@ -9,7 +9,7 @@ import tensorflow as tf
 from ...core import Widget
 
 
-class Regularizer(Widget, name='regularizer'):
+class Regularizer(Widget):
     def __init__(self, rate=None):
         super(Regularizer, self).__init__()
         if not hasattr(self, '_f'):
@@ -30,11 +30,11 @@ def l2_loss(x):
     return tf.reduce_sum(x ** 2) / 2
 
 
-class NoRegularizer(Regularizer, name='no_regularizer', rate=0., call=tf.reduce_min):
+class NoRegularizer(Regularizer, rate=0., call=tf.reduce_min):
     pass
 
 
-class L1Regularizer(Regularizer, name='l1_regularizer', rate=0.001, call=l1_loss):
+class L1Regularizer(Regularizer, rate=0.001, call=l1_loss):
     pass
 
 

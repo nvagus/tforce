@@ -53,7 +53,7 @@ def randomize_shift(x, rotation=0., height_shift=0., width_shift=0., switch=None
 @Widget.from_op
 def randomize_crop(x, pad=4, value=0, switch=None):
     y = tf.pad(x, [[0, 0], [pad, pad], [pad, pad], [0, 0]], constant_values=value)
-    y = tf.random_crop(y, x.get_shape())
+    y = tf.map_fn(lambda z: tf.random_crop(z, x.get_shape()[1:]), y)
     if switch is not None:
         y = tf.cond(switch, lambda: y, lambda: x)
     y.set_shape(x.get_shape())

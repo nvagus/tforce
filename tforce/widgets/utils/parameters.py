@@ -11,9 +11,9 @@ from .regularizers import NoRegularizer
 from ...core import Widget
 
 
-class Parameter(Widget, name='parameter'):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
-        super(Parameter, self).__init__(**kwargs)
+class Parameter(Widget):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+        super(Parameter, self).__init__()
         self._shape = shape
         self._dtype = dtype
         self._initializer = initializer
@@ -50,9 +50,9 @@ class Parameter(Widget, name='parameter'):
         return self._regularizer
 
 
-class Weight(Parameter, name='weight'):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
-        super(Weight, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+class Weight(Parameter):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+        super(Weight, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):
         parameter = super(Weight, self)._setup()
@@ -60,9 +60,9 @@ class Weight(Parameter, name='weight'):
         return parameter
 
 
-class Filter(Parameter, name='filter'):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
-        super(Filter, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+class Filter(Parameter):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+        super(Filter, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):
         parameter = super(Filter, self)._setup()
@@ -70,9 +70,9 @@ class Filter(Parameter, name='filter'):
         return parameter
 
 
-class Bias(Parameter, name='bias'):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer, **kwargs):
-        super(Bias, self).__init__(shape, dtype, initializer, regularizer, **kwargs)
+class Bias(Parameter):
+    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+        super(Bias, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):
         parameter = super(Bias, self)._setup()

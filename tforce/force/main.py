@@ -8,8 +8,8 @@ import os
 
 import click
 
+from .trainer import Trainer
 from .trainer import callback as _callback
-from ..core import AbstractDataStream
 
 """
 Sample:
@@ -31,7 +31,7 @@ def _set_gpu(_, __, value):
 
 
 def _set_batch_size(_, __, value):
-    AbstractDataStream.default.dequeue_batch = value
+    Trainer.default.batch_size = value
     return value
 
 

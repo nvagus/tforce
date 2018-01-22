@@ -8,8 +8,8 @@ import code
 import tforce as t4
 
 
-class A(t4.Scope, name='A', parent='Scope', k=1):
-    def __init__(self, **kwargs):
+class A(t4.Widget, name='A', parent='Scope', k=1):
+    def __init__(self):
         super(A, self).__init__()
         print(f'init {self._name} in A')
 
@@ -18,7 +18,7 @@ class A(t4.Scope, name='A', parent='Scope', k=1):
 
 
 class B(A, name='B', parent='A'):
-    def __init__(self, **kwargs):
+    def __init__(self):
         print(f'init {self._name} in B')
         super(B, self).__init__()
 

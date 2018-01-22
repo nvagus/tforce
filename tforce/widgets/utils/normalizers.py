@@ -9,9 +9,9 @@ import tensorflow as tf
 from ...core import Widget
 
 
-class MovingAverage(Widget, name='moving_average', decay=0.99):
-    def __init__(self, decay=None, initial=None, shape=None, **kwargs):
-        super(MovingAverage, self).__init__(**kwargs)
+class MovingAverage(Widget, decay=0.99):
+    def __init__(self, decay=None, initial=None, shape=None):
+        super(MovingAverage, self).__init__()
         self._decay = decay or self.default.decay
         self._initial = initial
         self._shape = shape or ()
@@ -24,7 +24,7 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
             self._lambda = tf.Variable(tf.ones((), dtype=self.default.float_dtype))
 
     def _setup(self, val, shift=None):
-        new_obj = self._obj * self._decay + val * (1 - self._decay)
+        new_obj = tf.multiply(self._obj, self._decay) + val * (1 - self._decay)
         if shift is not None:
             new_obj = tf.assign(self._obj, tf.cond(shift, lambda: new_obj, lambda: self._obj))
         else:
@@ -32,7 +32,7 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
         if self._initial is not None:
             return new_obj
         else:
-            new_lambda = self._lambda * self._decay
+            new_lambda = tf.multiply(self._lambda, self._decay)
             if shift is not None:
                 new_lambda = tf.assign(self._lambda, tf.cond(shift, lambda: new_lambda, lambda: self._lambda))
             else:
@@ -44,9 +44,9 @@ class MovingAverage(Widget, name='moving_average', decay=0.99):
         return tf.placeholder_with_default(tf.constant(True, dtype=tf.bool), shape=())
 
 
-class BatchNorm(Widget, name='batch_norm', decay=0.99, epsilon=1e-3, shift=None):
-    def __init__(self, axes, shape, **kwargs):
-        super(BatchNorm, self).__init__(**kwargs)
+class BatchNorm(Widget, decay=0.99, epsilon=1e-3, shift=None):
+    def __init__(self, axes, shape):
+        super(BatchNorm, self).__init__()
         if BatchNorm.default.shift is None:
             BatchNorm.default.shift = MovingAverage.new_shift()
         self._axes = axes
@@ -81,9 +81,9 @@ class BatchNorm(Widget, name='batch_norm', decay=0.99, epsilon=1e-3, shift=None)
         return self._pop_var
 
 
-class Scale(Widget, name='scale'):
-    def __init__(self, shape, **kwargs):
-        super(Scale, self).__init__(**kwargs)
+class Scale(Widget):
+    def __init__(self, shape):
+        super(Scale, self).__init__()
         self._shape = shape
 
     def _build(self):
@@ -106,9 +106,9 @@ class Scale(Widget, name='scale'):
         return self._var
 
 
-class BatchNormWithScale(Widget, name='batch_norm_with_scale'):
-    def __init__(self, axes, shape, **kwargs):
-        super(BatchNormWithScale, self).__init__(**kwargs)
+class BatchNormWithScale(Widget):
+    def __init__(self, axes, shape):
+        super(BatchNormWithScale, self).__init__()
         self._axes = axes
         self._shape = shape
 
@@ -138,4 +138,4 @@ class BatchNormWithScale(Widget, name='batch_norm_with_scale'):
 
 @Widget.from_op
 def batch_normalization(x, axes=None, shape=None):
-    return BatchNormWithScale(axes or list(range(len(x.shape) - 1)), shape or x.shape[-1:])(x)
+    return BatchNormWithScale(axes or list(range(len(x.shape) - 1)), shape or (x.shape[-1],))(x)

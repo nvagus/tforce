@@ -11,8 +11,8 @@ import numpy as np
 import numpy.lib.format as nlf
 import tensorflow as tf
 
-from .base import DefaultChain
-from .base import Scope
+from .base import Root
+from .base import Widget
 
 
 class Permutation(object):
@@ -41,9 +41,10 @@ class Permutation(object):
         return self._size
 
 
-class Pool(DefaultChain, name='pool', stderr='/dev/null', timeout=5):
+class Pool(Root, stderr='/dev/null', timeout=5):
     def __init__(self, workers, target):
         super(Pool, self).__init__()
+        self._lock = threading.Lock()
         self._stop = threading.Event()
         self._target = target
         self._workers = [threading.Thread(target=self.target) for _ in range(workers)]
@@ -53,8 +54,11 @@ class Pool(DefaultChain, name='pool', stderr='/dev/null', timeout=5):
             try:
                 self._target()
             except Exception as e:
-                with open(self.default.stderr, 'w') as file:
-                    file.write(str(e))
+                try:
+                    with self._lock, open(self.default.stderr, 'w') as file:
+                        file.write(str(e))
+                except KeyError:
+                    pass
 
     def start(self):
         for worker in self._workers:
@@ -131,6 +135,10 @@ class NpzDataSrc(AbstractDataSrc):
         self._data.update(kwargs)
         np.savez(filename, **self._data)
 
+    @property
+    def data(self):
+        return self._data
+
 
 class AbstractDataSet(object):
     def next(self, perm):
@@ -190,55 +198,37 @@ class DataSet(AbstractDataSet):
         return self._shapes
 
 
-class AbstractDataStream(Scope, name='data', capacity=10000, enqueue_batch=100, dequeue_batch=50):
-    def __init__(self, **kwargs):
+class AbstractDataStream(Widget, capacity=10000, enqueue_size=100, workers=2):
+    def __init__(self):
         super(AbstractDataStream, self).__init__()
 
-    def setup(self, buffer=None):
-        with tf.variable_scope(self._name), tf.name_scope(self._scope):
-            return self._setup(buffer)
-
-    def _setup(self, buffer=None):
-        raise NotImplementedError()
-
-    def next(self):
-        raise NotImplementedError()
-
     def using_workers(self, workers):
-        raise NotImplementedError()
-
-    @property
-    def buffer(self):
         raise NotImplementedError()
 
     @property
     def batch(self):
         raise NotImplementedError()
 
+    @property
+    def batch_size(self):
+        raise NotImplementedError()
 
-class DataStream(AbstractDataStream, workers=2):
-    def __init__(self, data: AbstractDataSet,
-                 capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
-        super(DataStream, self).__init__(**kwargs)
+    def givens(self, batch_size):
+        raise NotImplementedError()
+
+
+class DataStream(AbstractDataStream):
+    def __init__(self, data: AbstractDataSet, capacity=None, **kwargs):
+        super(DataStream, self).__init__()
         self._data = data
         self._dtypes = self._data.dtypes
         self._shapes = self._data.shapes
         self._keys = self._data.keys
-
         self._capacity = capacity or self.default.capacity
-        self._enqueue_batch = enqueue_batch or self.default.enqueue_batch
-        self._dequeue_batch = dequeue_batch or self.default.dequeue_batch
-
         self._perm = Permutation(self._data.size)
 
-    def _setup(self, buffer=None):
-        self._buffer = buffer or tf.PaddingFIFOQueue(
-            capacity=self._dequeue_batch,
-            dtypes=self._dtypes,
-            shapes=self._shapes,
-            names=self._keys
-        )
-        self._sess = tf.get_default_session()
+    def _setup(self, sess):
+        self._sess = sess
         self._queue = tf.PaddingFIFOQueue(
             capacity=self._capacity,
             dtypes=self._dtypes,
@@ -249,18 +239,15 @@ class DataStream(AbstractDataStream, workers=2):
             key: tf.placeholder(dtype, (None, *shape))
             for key, dtype, shape in zip(self._keys, self._dtypes, self._shapes)
         }
+        self._batch_size = tf.placeholder(tf.int32, ())
         self._enqueue = self._queue.enqueue_many({key: self._placeholders[key] for key in self._keys})
-        self._dequeue = self._buffer.enqueue_many(self._queue.dequeue_many(self._dequeue_batch))
-        self._batch = self._buffer.dequeue_many(self._dequeue_batch)
+        self._batch = self._queue.dequeue_many(self._batch_size)
         self._close = self._queue.close(cancel_pending_enqueues=True)
 
     def _process(self):
-        perm = self._perm.next(self._enqueue_batch)
+        perm = self._perm.next(self.default.enqueue_size)
         data = self._data.next(perm)
         self._sess.run(self._enqueue, feed_dict={self._placeholders[key]: data[key] for key in self._keys})
-
-    def next(self):
-        self._sess.run(self._dequeue)
 
     def close(self):
         self._sess.run(self._close)
@@ -276,12 +263,12 @@ class DataStream(AbstractDataStream, workers=2):
         return self._data
 
     @property
-    def batch_size(self):
-        return self._dequeue_batch
+    def queue(self):
+        return self._queue
 
     @property
-    def buffer(self):
-        return self._buffer
+    def batch_size(self):
+        return self._batch_size
 
     @property
     def batch(self):
@@ -299,66 +286,64 @@ class DataStream(AbstractDataStream, workers=2):
     def shapes(self):
         return self._shapes
 
+    def givens(self, batch_size):
+        return {self._batch_size: batch_size}
+
 
 class NpzDataStream(DataStream):
-    def __init__(self, filename, *keys, capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
-        data = DataSet(NpzDataSrc(filename), keys)
-        super(NpzDataStream, self).__init__(data, capacity, enqueue_batch, dequeue_batch, **kwargs)
+    def __init__(self, filename, *keys, capacity=None):
+        data = DataSet(NpzDataSrc(filename), *keys)
+        super(NpzDataStream, self).__init__(data, capacity)
 
 
 class MultiDataStream(AbstractDataStream):
-    def __init__(self, data: {str: AbstractDataSet},
-                 capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
-        super(MultiDataStream, self).__init__(**kwargs)
+    def __init__(self, data: {str: AbstractDataSet}, capacity=None):
+        super(MultiDataStream, self).__init__()
         self._subs = list(data)
         self._data = data
         self._capacity = capacity
-        self._enqueue_batch = enqueue_batch or self.default.enqueue_batch
-        self._dequeue_batch = dequeue_batch or self.default.dequeue_batch
-        self._option = None
+        self._selected = self._subs[0]
+        self._option_given = 0
 
-    def _setup(self, buffer=None):
-        self._streams = {
-            sub: DataStream(self._data[sub], self._capacity, self._enqueue_batch, self._dequeue_batch, name=sub)
+    def _setup(self, sess):
+        self._streams = [
+            DataStream(self._data[sub], self._capacity, name=sub)
             for sub in self._data
-        }
-        self._option = self._streams[self._subs[0]]
-        self._keys = self._option.keys
-        self._dtypes = self._option.dtypes
-        self._shapes = self._option.shapes
+        ]
+        for stream in self._streams:
+            stream.setup(sess)
 
-        self._sess = tf.get_default_session()
-        self._buffer = buffer or tf.PaddingFIFOQueue(
-            capacity=self._capacity,
-            dtypes=self._dtypes,
-            shapes=self._shapes,
-            names=self._keys
+        anyone = self._streams[0]
+        self._keys = anyone.keys
+        self._dtypes = anyone.dtypes
+        self._shapes = anyone.shapes
+
+        self._batch_size = tf.placeholder(tf.int32, ())
+        self._option = tf.placeholder(tf.int32, ())
+        self._queue = tf.PaddingFIFOQueue.from_list(
+            self._option, [stream.queue for stream in self._streams]
         )
-        for stream in self._streams.values():
-            stream.setup(self._buffer)
-        self._batch = self._buffer.dequeue_many(self._dequeue_batch)
+
+        self._batch = self._queue.dequeue_many(self._batch_size)
 
     @contextlib.contextmanager
     def using_workers(self, workers=None):
         with contextlib.ExitStack() as stack:
-            for stream in self._streams.values():
+            for stream in self._streams:
                 stack.enter_context(stream.using_workers(workers))
             yield stack
-
-    def next(self):
-        self._option.next()
 
     @property
     def data(self):
         return self._data
 
     @property
-    def batch_size(self):
-        return self._dequeue_batch
+    def queue(self):
+        return self._queue
 
     @property
-    def buffer(self):
-        return self._buffer
+    def batch_size(self):
+        return self._batch_size
 
     @property
     def batch(self):
@@ -366,14 +351,28 @@ class MultiDataStream(AbstractDataStream):
 
     @property
     def option(self):
-        return self._option.name
+        return self._option
 
-    @option.setter
-    def option(self, value):
-        self._option = self._streams[value]
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, val):
+        self._selected = val
+        try:
+            self._option_given = self._subs.index(val)
+        except ValueError:
+            raise ValueError(f'Invalid option: {val}')
+
+    def givens(self, batch_size):
+        return {
+            self._batch_size: batch_size,
+            self._option: self._option_given
+        }
 
 
 class MultiNpzDataStream(MultiDataStream):
-    def __init__(self, data: {str: str}, *keys, capacity=None, enqueue_batch=None, dequeue_batch=None, **kwargs):
+    def __init__(self, data: {str: str}, *keys, capacity=None):
         data = {sub: DataSet(NpzDataSrc(data[sub]), *keys) for sub in data}
-        super(MultiNpzDataStream, self).__init__(data, capacity, enqueue_batch, dequeue_batch, **kwargs)
+        super(MultiNpzDataStream, self).__init__(data, capacity)

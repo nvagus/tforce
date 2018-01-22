@@ -11,13 +11,13 @@ import subprocess
 
 import tensorflow as tf
 
-from .base import Scope
+from .base import Widget
 from .private import inspect_names as _inspect_names
 from .private import make_iterable as _make_iterable
 from .private import make_multiple as _make_multiple
 
 
-class Slot(Scope, name='slot', max_output=10):
+class Slot(Widget, max_output=10):
     """ A slot attaching to a model is a callable object that call the session to run tensors.
     """
 
@@ -42,7 +42,7 @@ class Slot(Scope, name='slot', max_output=10):
         super(Slot, self).__init__()
 
         self._model = model
-        self._local_step = 0
+        self._step = 0
 
         self._outputs = _make_iterable(outputs)
         self._updates = _make_iterable(updates)
@@ -79,21 +79,15 @@ class Slot(Scope, name='slot', max_output=10):
             self._scalars_summary + self._hists_summary + self._images_summary + self._audios_summary + self._summaries
         )
 
-    def __call__(self, givens=None, valid_step=False):
+    def __call__(self, givens=None):
         """ Run the outputs, updates, others, and summaries once.
         :param givens: updates for the feed dict.
-        :param valid_step: whether to count the global or local step.
         :return: the session running result.
         """
+        self._step += 1
+
         feed_dict = self.givens.copy()
-        if givens is not None:
-            feed_dict.update(givens)
-
-        if not valid_step:
-            self._local_step += 1
-            self._model.global_step += 1
-
-        self._model.next()
+        feed_dict.update(givens or {})
 
         if self._model.writer is not None:
             runnable, summaries = self._model.sess.run([self._runnable, self._summaries], feed_dict=feed_dict)
@@ -122,17 +116,21 @@ class Slot(Scope, name='slot', max_output=10):
         return _make_multiple(self._output_labels)
 
     @property
-    def local_step(self):
-        return self._local_step
+    def model(self):
+        return self._model
 
-    @local_step.setter
-    def local_step(self, step):
-        self._local_step = step
+    @property
+    def step(self):
+        return self._step
+
+    @step.setter
+    def step(self, step):
+        self._step = step
 
 
 class Model(
-    Scope,
-    name='model', gpu_options_allow_grouth=True, log_device_placement=False, allow_soft_placement=True,
+    Widget,
+    gpu_options_allow_grouth=True, log_device_placement=False, allow_soft_placement=True,
     summary_dir='/tmp', tensorboard_port=6006
 ):
     """
@@ -142,7 +140,7 @@ class Model(
         and connect them by the setup method.
     """
 
-    def __init__(self, **__):
+    def __init__(self):
         """ initialize a model
         """
         super(Model, self).__init__()
@@ -158,10 +156,10 @@ class Model(
             )
         )
         self._slots = {}
-        self._global_step = 0
         self._writer = None
         self._streams = None
         self._data = None
+        self._batch_size = None
         self._initializer = None
 
     def setup(self, *data_streams, **kwargs):
@@ -171,7 +169,7 @@ class Model(
         with self._sess.as_default(), self._graph.as_default():
             self._streams = data_streams
             for stream in self._streams:
-                stream.setup()
+                stream.setup(self._sess)
             self._data = [stream.batch for stream in self._streams]
             with tf.variable_scope(self._name), tf.name_scope(self._scope):
                 self._setup(*self._data, **kwargs)
@@ -185,14 +183,8 @@ class Model(
 
     __call__ = setup
 
-    def next(self):
-        """ Run the enqueue op for the model's buffers.
-        """
-        for stream in self._streams:
-            stream.next()
-
     @contextlib.contextmanager
-    def using_workers(self, workers=2):
+    def using_workers(self, workers=None):
         """ Use threads to run the enqueue ops for the data streams
         :param workers: how many threads working for each queue.
         :return: a context manager that runs the threads.
@@ -211,11 +203,6 @@ class Model(
         """
         log_dir = log_dir or self.default.summary_dir
         port = port or self.default.tensorboard_port
-
-        # with self._graph.as_default():
-        #     for _, slot in self._slots.items():
-        #         if not slot.built:
-        #             slot.build()
 
         log_dir = os.path.join(log_dir, self._name)
         if os.path.exists(log_dir):
@@ -259,13 +246,16 @@ class Model(
         self._slots[name] = slot
         return slot
 
-    def save(self, filename, widget):
+    def save(self, filename, widget=None):
         with self._sess.as_default(), self._graph.as_default():
-            widget.save(filename)
+            if widget:
+                widget.save(filename)
+            else:
+                super(Model, self).save(filename)
 
-    def restore(self, filename, widget):
+    def restore(self, filename, widget=None):
         with self._graph.as_default():
-            self._sess.run(widget.restore(filename))
+            self._sess.run(widget.restore(filename) if widget else super(Model, self).restore(filename))
 
     @property
     def sess(self):
@@ -276,13 +266,20 @@ class Model(
         return self._writer
 
     @property
-    def global_step(self):
-        return self._global_step
-
-    @global_step.setter
-    def global_step(self, step):
-        self._global_step = step
-
-    @property
     def slots(self):
         return self._slots
+
+    @property
+    def streams(self):
+        return self._streams
+
+    def givens(self, *batch_size):
+        _givens = {}
+        if len(batch_size) == 1:
+            batch_size = batch_size[0]
+            for stream in self._streams:
+                _givens.update(stream.givens(batch_size))
+        else:
+            for size, stream in zip(batch_size, self._streams):
+                _givens.update(stream.givens(batch_size))
+        return _givens

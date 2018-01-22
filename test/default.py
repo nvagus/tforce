@@ -13,7 +13,7 @@ if __name__ == '__main__':
     default.a = 12
     default.b = '21'
     default.default = {1: 2, 2: '1'}
-    copy = default.copy()
+    copy = default()
     print(default.a, copy.a)
     default.a = 36
     print(default.a, copy.a)
