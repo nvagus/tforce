@@ -71,7 +71,7 @@ class Model(t4.Model):
         )
 
 
-# python3 -m test.mnist -d 0
+# python3 -m test.residual -d 0
 @t4.main.begin
 @t4.main.gpu
 @t4.main.end
