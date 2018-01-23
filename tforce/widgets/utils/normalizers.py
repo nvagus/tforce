@@ -12,7 +12,7 @@ from ...core import Widget
 class MovingAverage(Widget, decay=0.99):
     def __init__(self, decay=None, initial=None, shape=None):
         super(MovingAverage, self).__init__()
-        self._decay = decay or self.default.decay
+        self._decay = decay if decay is not None else self.default.decay
         self._initial = initial
         self._shape = shape or ()
 

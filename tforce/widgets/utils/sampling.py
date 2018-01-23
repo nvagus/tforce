@@ -4,13 +4,15 @@
 # :time: 11/9/17-9:56 AM
 # :package: tforce.widgets.utils
 
+import functools
+
 import tensorflow as tf
 
 from . import image
 from ...core import Widget
 
 
-class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='VALID'):
+class AvgPool(Widget, pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
     def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
         super(AvgPool, self).__init__()
         self._pool_height = pool_height or self.default.pool_height
@@ -27,8 +29,10 @@ class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_heigh
         )
 
     @classmethod
-    def instance(cls, x, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
-        return cls(pool_height, pool_width, stride_height, stride_width)(x)
+    def instance(cls, x=None, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
+        return cls(pool_height, pool_width, stride_height, stride_width)(x) if x is not None else (
+            lambda y: cls(pool_height, pool_width, stride_height, stride_width)(y)
+        )
 
     @property
     def pool_height(self):
@@ -47,7 +51,7 @@ class AvgPool(Widget, name='avg_pool', pool_height=2, pool_width=2, stride_heigh
         return self._stride_width
 
 
-class GlobalAveragePooling(AvgPool, name='global_avg_pool', stride_height=1, stride_width=1, padding='VALID'):
+class GlobalAveragePooling(AvgPool, stride_height=1, stride_width=1, padding='VALID'):
     def __init__(self, input_height, input_width):
         super(GlobalAveragePooling, self).__init__(input_height, input_width)
 
@@ -56,17 +60,16 @@ class GlobalAveragePooling(AvgPool, name='global_avg_pool', stride_height=1, str
         return image.to_flat(x)
 
     @classmethod
-    def instance(cls, x, input_height=None, input_width=None, **kwargs):
-        input_height = input_height or x.shape[1]
-        input_width = input_width or x.shape[2]
-        return cls(input_height, input_width)(x)
+    def instance(cls, x=None, input_height=None, input_width=None, **kwargs):
+        if x is not None:
+            input_height = input_height or x.shape[1]
+            input_width = input_width or x.shape[2]
+            return cls(input_height, input_width)(x)
+        else:
+            return functools.partial(GlobalAveragePooling.instance, input_height=input_height, input_width=input_width)
 
 
-avg_pool = AvgPool.instance
-flat_pool = GlobalAveragePooling.instance
-
-
-class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
+class MaxPool(Widget, pool_height=2, pool_width=2, stride_height=2, stride_width=2, padding='SAME'):
     def __init__(self, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
         super(MaxPool, self).__init__()
         self._pool_height = pool_height or self.default.pool_height
@@ -83,8 +86,10 @@ class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_heigh
         )
 
     @classmethod
-    def instance(cls, x, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
-        return cls(pool_height, pool_width, stride_height, stride_width)(x)
+    def instance(cls, x=None, pool_height=None, pool_width=None, stride_height=None, stride_width=None):
+        return cls(pool_height, pool_width, stride_height, stride_width)(x) if x is not None else (
+            lambda y: cls(pool_height, pool_width, stride_height, stride_width)(y)
+        )
 
     @property
     def pool_height(self):
@@ -101,9 +106,6 @@ class MaxPool(Widget, name='max_pool', pool_height=2, pool_width=2, stride_heigh
     @property
     def stride_width(self):
         return self._stride_width
-
-
-max_pool = MaxPool.instance
 
 
 class Dropout(Widget, keep=None):
@@ -129,8 +131,10 @@ class Dropout(Widget, keep=None):
             return local_dropout
 
     @classmethod
-    def instance(cls, x, keep_prob=0.5, alpha=0.):
-        return cls(keep_prob, alpha)(x)
+    def instance(cls, x=None, keep_prob=0.5, alpha=0.):
+        return cls(keep_prob, alpha)(x) if x is not None else (
+            lambda y: cls(keep_prob, alpha)(y)
+        )
 
     @property
     def keep_prob(self):
@@ -141,10 +145,7 @@ class Dropout(Widget, keep=None):
         return self._alpha
 
 
-dropout = Dropout.instance
-
-
-class OneHot(Widget, name='one_hot', on_value=None, off_value=None):
+class OneHot(Widget, on_value=None, off_value=None):
     def __init__(self, labels, on_value=None, off_value=None):
         super(OneHot, self).__init__()
         self._on_value = on_value or self.default.on_value
@@ -155,8 +156,10 @@ class OneHot(Widget, name='one_hot', on_value=None, off_value=None):
         return tf.one_hot(x, self._labels, self._on_value, self._off_value, dtype=self.default.float_dtype)
 
     @classmethod
-    def instance(cls, x, labels, on_value=None, off_value=None):
-        return cls(labels, on_value, off_value)(x)
+    def instance(cls, x=None, labels=None, on_value=None, off_value=None):
+        return cls(labels, on_value, off_value)(x) if x is not None else (
+            lambda y: cls(labels, on_value, off_value)(y)
+        )
 
     @property
     def on_value(self):
@@ -171,10 +174,7 @@ class OneHot(Widget, name='one_hot', on_value=None, off_value=None):
         return self._labels
 
 
-one_hot = OneHot.instance
-
-
-class ArgMax(Widget, name='arg_max', axis=1):
+class ArgMax(Widget, axis=1):
     def __init__(self, axis=None):
         super(ArgMax, self).__init__()
         self._axis = axis or self.default.axis
@@ -183,18 +183,15 @@ class ArgMax(Widget, name='arg_max', axis=1):
         return tf.argmax(x, axis=self._axis, output_type=self.default.int_dtype)
 
     @classmethod
-    def instance(cls, x, axis=None):
-        return cls(axis)(x)
+    def instance(cls, x=None, axis=None):
+        return cls(axis)(x) if x is not None else (lambda y: cls(axis)(y))
 
     @property
     def axis(self):
         return self._axis
 
 
-argmax = ArgMax.instance
-
-
-class ArgMin(Widget, name='arg_min', axis=1):
+class ArgMin(Widget, axis=1):
     def __init__(self, axis=None):
         super(ArgMin, self).__init__()
         self._axis = axis or self.default.axis
@@ -203,12 +200,18 @@ class ArgMin(Widget, name='arg_min', axis=1):
         return tf.argmin(x, axis=self._axis, output_type=self.default.int_dtype)
 
     @classmethod
-    def instance(cls, x, axis=None):
-        return cls(axis)(x)
+    def instance(cls, x=None, axis=None):
+        return cls(axis)(x) if x is not None else (lambda y: cls(axis)(y))
 
     @property
     def axis(self):
         return self._axis
 
 
+avg_pool = AvgPool.instance
+flat_pool = GlobalAveragePooling.instance
+max_pool = MaxPool.instance
+dropout = Dropout.instance
+one_hot = OneHot.instance
+argmax = ArgMax.instance
 argmin = ArgMin.instance

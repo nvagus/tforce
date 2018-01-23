@@ -93,7 +93,7 @@ def main():
                 stream.data['train'].size // t4.trainer.Alice.default.batch_size, 1, givens={model.lr: lr}
             )
             stream.selected = 'valid'
-            t4.trainer.Bob(model.valid, 10000).run()
+            t4.trainer.Bob(model.valid, 1000).run(10)
     return 0
 
 

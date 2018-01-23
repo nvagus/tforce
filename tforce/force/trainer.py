@@ -13,12 +13,60 @@ from ..core import Slot, Root
 from ..core.private import make_iterable as _make_iterable
 
 
-class _HideCursor(object):
+class _Console(object):
+    def __init__(self, enter_code, exit_code):
+        self._enter_code = enter_code
+        self._exit_code = exit_code
+
     def __enter__(self):
-        print('\33[?25l', end='', flush=True)
+        print(self._enter_code, end='', flush=True)
 
     def __exit__(self, *unused):
-        print('\33[?25h', end='', flush=True)
+        print(self._exit_code, end='', flush=True)
+
+
+class _HideCursor(_Console):
+    def __init__(self):
+        super(_HideCursor, self).__init__('\33[?25l', '\33[?25h')
+
+
+class _Style(_Console):
+    fore = {
+        'black': 30,
+        'red': 31,
+        'green': 32,
+        'yellow': 33,
+        'blue': 34,
+        'purple': 35,
+        'cyan': 36,
+        'white': 37,
+        None: ''
+    }
+
+    back = {
+        'black': 40,
+        'red': 41,
+        'green': 42,
+        'yellow': 43,
+        'blue': 44,
+        'purple': 45,
+        'cyan': 46,
+        'white': 47,
+        None: ''
+    }
+
+    mode = {
+        'normal': 0,
+        'bold': 1,
+        'underline': 4,
+        'blink': 5,
+        'invert': 7,
+        'hide': 8,
+        None: ''
+    }
+
+    def __init__(self, mode=None, fore=None, back=None):
+        super(_Style, self).__init__(f'\033[{_Style.mode[mode]};{_Style.fore[fore]};{_Style.back[back]}m', '\033[0m')
 
 
 def _print_log(name, step, values, labels, fmt='{}={:<15.5f}', next_line=True):
@@ -111,13 +159,17 @@ class Alice(Trainer):
 
 
 class Bob(Trainer):
-    """ Bob does validation, who computes only one batch.
+    """ Bob does validation, who computing average performance of output targets.
     """
 
-    def run(self, givens=None):
+    def run(self, steps=1, highlight=False, givens=None):
         givens = givens or {}
         givens.update(self.slot.model.givens(self._batch_size))
-        self._result = result = self._slot(givens=givens)
-        self._add_log(result)
-        _print_log(self._slot.name, self._slot.step, result, self._slot.labels, next_line=True)
+        for _ in range(steps):
+            self._result = result = self._slot(givens=givens)
+            self._add_log(result)
+        log = self.log
+        self._result = result = [np.average(log[key]) for key in log]
+        with _Style('bold', 'red', 'black') if highlight else _Style():
+            _print_log(self._slot.name, self._slot.step, result, self._slot.labels, next_line=True)
         return self
