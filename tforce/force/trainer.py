@@ -32,26 +32,26 @@ class _HideCursor(_Console):
 
 class _Style(_Console):
     fore = {
-        'black': 30,
-        'red': 31,
-        'green': 32,
-        'yellow': 33,
-        'blue': 34,
-        'purple': 35,
-        'cyan': 36,
-        'white': 37,
-        None: ''
+        'black': ';30',
+        'red': ';31',
+        'green': ';32',
+        'yellow': ';33',
+        'blue': ';34',
+        'purple': ';35',
+        'cyan': ';36',
+        'white': ';37',
+        None: ';'
     }
 
     back = {
-        'black': 40,
-        'red': 41,
-        'green': 42,
-        'yellow': 43,
-        'blue': 44,
-        'purple': 45,
-        'cyan': 46,
-        'white': 47,
+        'black': ';40',
+        'red': ';41',
+        'green': ';42',
+        'yellow': ';43',
+        'blue': ';44',
+        'purple': ';45',
+        'cyan': ';46',
+        'white': ';47',
         None: ''
     }
 
@@ -62,14 +62,14 @@ class _Style(_Console):
         'blink': 5,
         'invert': 7,
         'hide': 8,
-        None: ''
+        None: 0
     }
 
     def __init__(self, mode=None, fore=None, back=None):
-        super(_Style, self).__init__(f'\033[{_Style.mode[mode]};{_Style.fore[fore]};{_Style.back[back]}m', '\033[0m')
+        super(_Style, self).__init__(f'\033[{_Style.mode[mode]}{_Style.fore[fore]}{_Style.back[back]}m', '\033[0m')
 
 
-def _print_log(name, step, values, labels, fmt='{}={:<15.5f}', next_line=True):
+def _print_log(name, step, values, labels, fmt='{}={:<12.5f}', next_line=True):
     end = '\n' if next_line else '\r'
     pairs = zip(_make_iterable(labels), _make_iterable(values))
     print(f'{name} loop:{step:<10d}\t' + '\t'.join([fmt.format(*pair) for pair in pairs]), end=end,
@@ -170,6 +170,6 @@ class Bob(Trainer):
             self._add_log(result)
         log = self.log
         self._result = result = [np.average(log[key]) for key in log]
-        with _Style('bold', 'red', 'black') if highlight else _Style():
+        with _Style('bold', 'red') if highlight else _Style():
             _print_log(self._slot.name, self._slot.step, result, self._slot.labels, next_line=True)
         return self

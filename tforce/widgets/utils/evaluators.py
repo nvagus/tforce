@@ -22,6 +22,15 @@ def categorical_cross_entropy_loss(y_pred, y_true, with_false=True, epsilon=1e-8
 
 @Widget.from_op
 def correct_prediction(y_pred, y_true, sum_up=tf.reduce_mean):
-    y_pred = tf.cast(y_pred, tf.int64)
-    y_true = tf.cast(y_true, tf.int64)
+    y_pred = tf.cast(y_pred, Widget.default.int_dtype)
+    y_true = tf.cast(y_true, Widget.default.int_dtype)
     return sum_up(tf.cast(tf.equal(y_pred, y_true), Widget.default.float_dtype))
+
+
+@Widget.from_op
+def conditional_prediction(y_pred, y_true, condition, sum_up=tf.reduce_mean):
+    y_pred = tf.cast(y_pred, Widget.default.int_dtype)
+    y_true = tf.cast(y_true, Widget.default.int_dtype)
+    conditional_overall = tf.cast(condition, Widget.default.float_dtype)
+    conditional_correction = tf.cast(tf.logical_and(condition, tf.equal(y_pred, y_true)), Widget.default.float_dtype)
+    return sum_up(conditional_correction) / sum_up(conditional_overall)

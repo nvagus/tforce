@@ -20,7 +20,7 @@ class Model(t4.Model):
 
         t4.Regularizer.default.rate = 0.0005
         switch = tf.placeholder_with_default(True, ())
-        dropout = t4.Dropout(keep_prob=0.7)
+        # dropout = t4.Dropout(keep_prob=0.7)
         conv = t4.Conv(3, 16, 3, 3, 1, 1)
         residual = t4.DeepResidualConv(
             (32, 6), (64, 6), (128, 6),
@@ -36,7 +36,9 @@ class Model(t4.Model):
         dense = t4.batch_normalization(dense)
         dense = t4.relu(dense)
 
-        dense = residual(dense, t4.batch_normalization, t4.relu, dropout=dropout)
+        dense = residual(dense, t4.batch_normalization, t4.relu,
+                         # dropout=dropout
+                         )
         dense = t4.batch_normalization(dense)
         dense = t4.relu(dense)
 
@@ -65,7 +67,7 @@ class Model(t4.Model):
             outputs=(loss, acc),
             givens={
                 t4.BatchNorm.default.shift: False,
-                dropout.default.keep: True,
+                # dropout.default.keep: True,
                 switch: False
             }
         )
@@ -73,6 +75,7 @@ class Model(t4.Model):
 
 # python3 -m test.residual -d 0
 @t4.main.begin
+@t4.main.batch_size(128)
 @t4.main.gpu
 @t4.main.end
 def main():
@@ -93,7 +96,7 @@ def main():
                 stream.data['train'].size // t4.trainer.Alice.default.batch_size, 1, givens={model.lr: lr}
             )
             stream.selected = 'valid'
-            t4.trainer.Bob(model.valid, 1000).run(10)
+            t4.trainer.Bob(model.valid, 100).run(100, highlight=True)
     return 0
 
 

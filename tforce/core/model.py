@@ -144,7 +144,7 @@ class Model(
         """ initialize a model
         """
         super(Model, self).__init__()
-        self._graph = tf.Graph()
+        self.__graph__ = self._graph = tf.Graph()
         self._sess = tf.Session(
             graph=self._graph,
             config=tf.ConfigProto(
@@ -256,6 +256,10 @@ class Model(
     def restore(self, filename, widget=None):
         with self._graph.as_default():
             self._sess.run(widget.restore(filename) if widget else super(Model, self).restore(filename))
+
+    @property
+    def graph(self):
+        return self._graph
 
     @property
     def sess(self):
