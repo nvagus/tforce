@@ -249,6 +249,7 @@ class Model(
     def save(self, filename, widget=None):
         with self._sess.as_default(), self._graph.as_default():
             if widget:
+
                 widget.save(filename)
             else:
                 super(Model, self).save(filename)

@@ -18,9 +18,40 @@ class Model(t4.Model):
         image = data['image']
         label = data['label']
 
-        tf.train.import_meta_graph("../resnet/resnet_v1_50.ckpt")
+        image = tf.image.resize_images(image, (224, 224))
+        image = t4.image.to_dense(image)
+        from .tfmodel import imagenet_resnet_v2
+        # training = tf.placeholder_with_default(True, ())
+        # network = imagenet_resnet_v2(50, 1001)
+        # cate = network(image, training)
+        # import pprint
+        # pprint.pprint(self.global_variables, indent=2)
 
-        print(self._graph.)
+        def resnet_model_fn(features, labels, mode, *unused):
+            network = imagenet_resnet_v2(50, 1001)
+            logits = network(
+                inputs=features, is_training=(mode == tf.estimator.ModeKeys.TRAIN))
+
+            predictions = {
+                'classes': tf.argmax(logits, axis=1),
+                'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+            }
+
+            if mode == tf.estimator.ModeKeys.PREDICT:
+                return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+            loss = tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels)
+
+            return tf.estimator.EstimatorSpec(
+                mode=mode,
+                predictions=predictions,
+                loss=loss
+            )
+
+        tf.estimator.Estimator(model_fn=resnet_model_fn, model_dir='../resnet')
+        print(self.global_variables)
+        import code
+        code.interact(local=locals())
         exit()
 
 
