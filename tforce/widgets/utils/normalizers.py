@@ -47,8 +47,8 @@ class MovingAverage(Widget, decay=0.99):
 class BatchNorm(Widget, decay=0.99, epsilon=1e-3, shift=None):
     def __init__(self, axes, shape):
         super(BatchNorm, self).__init__()
-        if BatchNorm.default.shift is None:
-            BatchNorm.default.shift = MovingAverage.new_shift()
+        if self.default.shift is None or self.__graph__ is not self.default.shift.graph:
+            self.default.shift = MovingAverage.new_shift()
         self._axes = axes
         self._shape = shape
 

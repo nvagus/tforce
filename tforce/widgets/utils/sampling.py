@@ -115,7 +115,7 @@ class Dropout(Widget, keep=None):
         self._alpha = alpha
 
     def _build(self):
-        if self.default.keep is None:
+        if self.default.keep is None or self.__graph__ is not self.default.keep.graph:
             self.default.keep = tf.placeholder_with_default(False, ())
         self._keep_prob = tf.cond(
             self.default.keep,

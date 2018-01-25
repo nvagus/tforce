@@ -30,7 +30,7 @@ class Default(object):
 
 
 class Root(object):
-    default = Default('Root')
+    default = Default()
 
     def __init_subclass__(cls, **kwargs):
         cls.default = cls.default(**kwargs)
@@ -52,7 +52,7 @@ class Scope(type):
 
         obj = super(Scope, cls).__call__(*args, **kwargs)
 
-        obj.__graph__ = graph = obj.__graph__ if hasattr(obj, '__graph__') else tf.get_default_graph()
+        obj.__graph__ = graph = obj.__graph__ if hasattr(obj, 'graph') else tf.get_default_graph()
         Scope.__scopes__[graph] = scopes = Scope.__scopes__.get(graph) or set()
         outer_scope = graph.get_name_scope()
 
@@ -69,6 +69,7 @@ class Widget(Root, metaclass=Scope, float_dtype=tf.float32, int_dtype=tf.int64):
         super(Widget, self).__init__()
         self._name = None
         self._scope = None
+        self.__graph__ = None
 
     def build(self, name, scope):
         self._name = name
