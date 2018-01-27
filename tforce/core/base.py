@@ -98,6 +98,12 @@ class Widget(Root, metaclass=Scope, float_dtype=tf.float32, int_dtype=tf.int64):
     def default_int_dtype(self):
         return self.default.int_dtype
 
+    def cast_to_default_float_dtype(self, x):
+        return tf.cast(x, self.default.float_dtype)
+
+    def cast_to_default_int_dtype(self, x):
+        return tf.cast(x, self.default.int_dtype)
+
     @property
     def name(self):
         return self._name
