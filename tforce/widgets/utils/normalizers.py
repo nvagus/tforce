@@ -18,10 +18,19 @@ class MovingAverage(Widget, decay=0.99):
 
     def _build(self):
         if self._initial is not None:
-            self._obj = tf.Variable(tf.constant(self._initial, shape=self._shape, dtype=self.default.float_dtype))
+            self._obj = tf.Variable(
+                tf.constant(self._initial, shape=self._shape, dtype=self.default.float_dtype),
+                trainable=False
+            )
         else:
-            self._obj = tf.Variable(tf.zeros(shape=self._shape, dtype=self.default.float_dtype))
-            self._lambda = tf.Variable(tf.ones((), dtype=self.default.float_dtype))
+            self._obj = tf.Variable(
+                tf.zeros(shape=self._shape, dtype=self.default.float_dtype),
+                trainable=False
+            )
+            self._lambda = tf.Variable(
+                tf.ones((), dtype=self.default.float_dtype),
+                trainable=False
+            )
 
     def _setup(self, val, shift=None):
         new_obj = tf.multiply(self._obj, self._decay) + val * (1 - self._decay)

@@ -149,7 +149,11 @@ class Widget(Root, metaclass=Scope, float_dtype=tf.float32, int_dtype=tf.int64):
         le = len(self._scope)
         if os.path.isfile(filename):
             initials = np.load(filename)
-            return [tf.assign(x, tf.constant(initials[x.name[le:]])) for x in self.global_variables]
+            return [
+                tf.assign(x, tf.constant(initials[x.name[le:]]))
+                for x in self.global_variables
+                if x.name[le:] in initials
+            ]
         else:
             return tf.no_op()
 

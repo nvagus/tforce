@@ -78,6 +78,26 @@ class Conv(
         return self._stride_width
 
 
+class ConvNoBias(Conv):
+
+    def _build(self):
+        self._filter = Filter.instance(
+            shape=(self._filter_height, self._filter_width, self._input_channel, self._output_channel),
+            dtype=self.default.float_dtype,
+            initializer=self.default.filter_initializer,
+            regularizer=self.default.filter_regularizer
+        )
+
+    def _setup(self, x):
+        return tf.nn.conv2d(
+            input=x,
+            filter=self._filter,
+            strides=(1, self._stride_height, self._stride_width, 1),
+            padding=self.default.padding,
+            data_format='NHWC'
+        )
+
+
 class DeepConv(DeepWidget, block=Conv):
     def __init__(
             self, *channels,
@@ -127,7 +147,7 @@ class ResidualConv(
     def __init__(
             self, input_channel, output_channel,
             filter_height=None, filter_width=None, stride_height=None, stride_width=None,
-            block=None, norm=None
+            block=None
     ):
         super(ResidualConv, self).__init__(block)
         self._input_channel = input_channel
@@ -183,6 +203,28 @@ class ResidualConv(
         return self._stride_width
 
 
+class ResidualConvOS(ResidualConv):
+    def __init__(
+            self, input_channel, output_channel,
+            filter_height=None, filter_width=None, stride_height=None, stride_width=None,
+            block=None
+    ):
+        super(ResidualConvOS, self).__init__(
+            input_channel, output_channel, filter_height, filter_width, stride_height, stride_width, block)
+
+    def _setup(self, x, *calls, **kwargs):
+        y = x
+        for layer in self._layers:
+            y = layer(y)
+            for call in calls:
+                y = call(y)
+        if isinstance(self._shortcut, self._block):
+            x = self._shortcut(x)
+            for call in calls:
+                x = call(x)
+        return x + y
+
+
 class SimpleResidualConv(ResidualConv):
     def __init__(
             self, input_channel, output_channel,
@@ -190,6 +232,30 @@ class SimpleResidualConv(ResidualConv):
             block=None
     ):
         super(SimpleResidualConv, self).__init__(
+            input_channel, output_channel,
+            filter_height, filter_width, stride_height, stride_width,
+            block
+        )
+
+    def _build(self):
+        self._layers = [
+            self._block(self._input_channel, self._input_channel, self._filter_height, self._filter_width, 1, 1),
+            self._block(self._input_channel, self._output_channel, self._filter_height, self._filter_width,
+                        self._stride_height, self._stride_width),
+        ]
+        if self._input_channel != self._output_channel or self._stride_height * self.stride_width != 1:
+            self._shortcut = self._block(
+                self._input_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width
+            )
+
+
+class SimpleResidualConvOS(ResidualConvOS):
+    def __init__(
+            self, input_channel, output_channel,
+            filter_height=None, filter_width=None, stride_height=None, stride_width=None,
+            block=None
+    ):
+        super(SimpleResidualConvOS, self).__init__(
             input_channel, output_channel,
             filter_height, filter_width, stride_height, stride_width,
             block
@@ -218,7 +284,32 @@ class BottleNeckResidualConv(ResidualConv, rate=4):
             filter_height, filter_width, stride_height, stride_width,
             block
         )
-        self._sample_channel = self._input_channel // self.default.rate
+        self._sample_channel = self._output_channel // self.default.rate
+
+    def _build(self):
+        self._layers = [
+            self._block(self.input_channel, self._sample_channel, 1, 1, 1, 1),
+            self._block(self._sample_channel, self._sample_channel, self._filter_height, self._filter_width, 1, 1),
+            self._block(self._sample_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width)
+        ]
+        if self._input_channel != self._output_channel or self._stride_height * self.stride_width != 1:
+            self._shortcut = self._block(
+                self._input_channel, self._output_channel, 1, 1, self._stride_height, self._stride_width
+            )
+
+
+class BottleNeckResidualConvOS(ResidualConvOS, rate=4):
+    def __init__(
+            self, input_channel, output_channel,
+            filter_height=None, filter_width=None, stride_height=None, stride_width=None,
+            block=None
+    ):
+        super(BottleNeckResidualConvOS, self).__init__(
+            input_channel, output_channel,
+            filter_height, filter_width, stride_height, stride_width,
+            block
+        )
+        self._sample_channel = self._output_channel // self.default.rate
 
     def _build(self):
         self._layers = [
