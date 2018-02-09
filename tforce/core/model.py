@@ -159,7 +159,6 @@ class Model(
         self._writer = None
         self._streams = None
         self._data = None
-        self._batch_size = None
         self._initializer = None
 
     def setup(self, *data_streams, **kwargs):
