@@ -115,6 +115,10 @@ class Trainer(Root, batch_size=100):
     def result(self):
         return self._result
 
+    @property
+    def fields(self):
+        return self._fields
+
     def save(self, filename):
         np.savez(filename, **self.log)
 
@@ -172,4 +176,14 @@ class Bob(Trainer):
         self._result = result = [np.average(log[key]) for key in log]
         with _Style('bold', 'red') if highlight else _Style():
             _print_log(self._slot.name, self._slot.step, result, self._slot.labels, next_line=True)
+        return self
+
+
+class Cindy(Trainer):
+
+    def run(self, steps=1, givens=None):
+        givens = givens or {}
+        givens.update(self.slot.model.givens(self._batch_size))
+        for _ in range(steps):
+            self._result = result = self._slot(givens=givens)
         return self

@@ -14,7 +14,7 @@ class Regularizer(Widget):
         super(Regularizer, self).__init__()
         if not hasattr(self, '_f'):
             self._f = self.default.call
-        self._rate = rate or self.default.rate
+        self._rate = rate if rate is not None else self.default.rate
 
     def _setup(self, *args, **kwargs):
         loss = self._rate * self._f(*args, **kwargs)

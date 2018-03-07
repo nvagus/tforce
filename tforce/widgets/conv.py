@@ -327,7 +327,7 @@ class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
     def __init__(
             self, *channels,
             filter_height=None, filter_width=None, stride_height=None, stride_width=None,
-            block=None, input_channel=None
+            block=None, input_channel=None, first_layer=True
     ):
         super(DeepResidualConv, self).__init__(block)
         self._channels = sum([[channel] * times for channel, times in channels], [])
@@ -336,10 +336,11 @@ class DeepResidualConv(DeepWidget, block=SimpleResidualConv):
         self._stride_height = stride_height or self._block.default.stride_height
         self._stride_width = stride_width or self._block.default.stride_width
         self._input_channel = input_channel or self._channels[0]
+        self._first_layer = first_layer
 
     def _build(self):
         input_channels = [self._input_channel] + self._channels
-        first_layer = True
+        first_layer = self._first_layer
         for input_channel, output_channel in zip(input_channels, self._channels):
             if not first_layer and input_channel != output_channel:
                 self._layers.append(self._block(

@@ -12,10 +12,10 @@ from ...core import Widget
 
 
 class Parameter(Widget):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+    def __init__(self, shape, dtype=None, initializer=ZerosInitializer, regularizer=NoRegularizer):
         super(Parameter, self).__init__()
         self._shape = shape
-        self._dtype = dtype
+        self._dtype = dtype or self.default_float_dtype
         self._initializer = initializer
         self._regularizer = regularizer
 
@@ -30,7 +30,7 @@ class Parameter(Widget):
         return parameter
 
     @classmethod
-    def instance(cls, shape, dtype, initializer, regularizer):
+    def instance(cls, shape, dtype=None, initializer=None, regularizer=None):
         return cls(shape, dtype, initializer, regularizer)()
 
     @property
@@ -51,7 +51,7 @@ class Parameter(Widget):
 
 
 class Weight(Parameter):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+    def __init__(self, shape, dtype=None, initializer=ZerosInitializer, regularizer=NoRegularizer):
         super(Weight, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):
@@ -61,7 +61,7 @@ class Weight(Parameter):
 
 
 class Filter(Parameter):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+    def __init__(self, shape, dtype=None, initializer=ZerosInitializer, regularizer=NoRegularizer):
         super(Filter, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):
@@ -71,7 +71,7 @@ class Filter(Parameter):
 
 
 class Bias(Parameter):
-    def __init__(self, shape, dtype, initializer=ZerosInitializer, regularizer=NoRegularizer):
+    def __init__(self, shape, dtype=None, initializer=ZerosInitializer, regularizer=NoRegularizer):
         super(Bias, self).__init__(shape, dtype, initializer, regularizer)
 
     def _setup(self):

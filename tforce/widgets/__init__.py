@@ -6,4 +6,5 @@
 
 from .conv import *
 from .linear import *
+from .recurrent import *
 from .utils import *

@@ -32,6 +32,10 @@ class OnesInitializer(Initializer, call=tf.ones):
     pass
 
 
+class OrthogonalInitializer(Initializer, call=tf.orthogonal_initializer()):
+    pass
+
+
 class VarianceScaling(Root, fin=1., fout=1., scale=1.):
     @classmethod
     def get_variance(cls, shape):

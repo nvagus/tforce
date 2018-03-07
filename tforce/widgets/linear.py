@@ -50,8 +50,35 @@ class Linear(
         return self._bias
 
 
+class LinearNoBias(
+    Widget,
+    weight_initializer=HeUniformInitializer, weight_regularizer=L2Regularizer
+):
+    def __init__(self, input_depth, output_depth):
+        super(LinearNoBias, self).__init__()
+        self._input_depth = input_depth
+        self._output_depth = output_depth
+
+    def _build(self):
+        self._weight = Weight.instance(
+            shape=(self._input_depth, self._output_depth),
+            dtype=self.default.float_dtype,
+            initializer=self.default.weight_initializer,
+            regularizer=self.default.weight_regularizer
+        )
+
+    def _setup(self, x):
+        y = tf.tensordot(x, self._weight, axes=1)
+        y.set_shape((*x.get_shape()[:-1], self._output_depth))
+        return y
+
+    @property
+    def weight(self):
+        return self._weight
+
+
 class DeepLinear(
-    DeepWidget, name='deep_linear', block=Linear
+    DeepWidget, block=Linear
 ):
     def __init__(self, *depths, block=None):
         super(DeepLinear, self).__init__(block)
@@ -66,3 +93,28 @@ class DeepLinear(
     @property
     def depths(self):
         return self._depths
+
+
+class Lookup(
+    Widget,
+    weight_initializer=HeUniformInitializer, weight_regularizer=L2Regularizer
+):
+    def __init__(self, input_depth, output_depth):
+        super(Lookup, self).__init__()
+        self._input_depth = input_depth
+        self._output_depth = output_depth
+
+    def _build(self):
+        self._weight = Weight.instance(
+            shape=(self._input_depth, self._output_depth),
+            dtype=self.default.float_dtype,
+            initializer=self.default.weight_initializer,
+            regularizer=self.default.weight_regularizer
+        )
+
+    def _setup(self, x):
+        return tf.gather(self._weight, tf.cast(x, self.default_int_dtype))
+
+    @property
+    def weight(self):
+        return self._weight
