@@ -6,7 +6,7 @@
 
 import tensorflow as tf
 
-from .initializers import ZerosInitializer
+from .initializers import ZerosInitializer, OnesInitializer
 from .regularizers import NoRegularizer
 from ...core import Widget
 
@@ -78,3 +78,44 @@ class Bias(Parameter):
         parameter = super(Bias, self)._setup()
         tf.get_default_graph().add_to_collection(tf.GraphKeys.BIASES, parameter)
         return parameter
+
+
+class Power(Parameter):
+    def __init__(self, shape, dtype=None, initializer=OnesInitializer, regularizer=NoRegularizer):
+        super(Power, self).__init__(shape, dtype, initializer, regularizer)
+
+    def _setup(self):
+        parameter = super(Power, self)._setup()
+        tf.get_default_graph().add_to_collection(tf.GraphKeys.WEIGHTS, parameter)
+        return parameter
+
+
+class Layer(
+    Widget,
+    weight_initializer=ZerosInitializer, weight_regularizer=NoRegularizer,
+    filter_initializer=ZerosInitializer, filter_regularizer=NoRegularizer,
+    bias_initializer=ZerosInitializer, bias_regularizer=NoRegularizer,
+    power_initializer=OnesInitializer, power_regularizer=NoRegularizer
+):
+    def __init__(self):
+        super(Layer, self).__init__()
+
+    def _weight_variable(self, shape):
+        return Weight.instance(
+            shape, self.default_float_dtype, self.default.weight_initializer, self.default.weight_regularizer
+        )
+
+    def _bias_variable(self, shape):
+        return Weight.instance(
+            shape, self.default_float_dtype, self.default.bias_initializer, self.default.bias_regularizer
+        )
+
+    def _filter_variable(self, shape):
+        return Weight.instance(
+            shape, self.default_float_dtype, self.default.filter_initializer, self.default.filter_regularizer
+        )
+
+    def _power_variable(self, shape):
+        return Power.instance(
+            shape, self.default_float_dtype, self.default.power_initializer, self.default.power_regularizer
+        )

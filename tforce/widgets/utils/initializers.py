@@ -17,11 +17,19 @@ class Initializer(Widget):
         if not hasattr(self, '_f'):
             self._f = self.default.call
 
+    @classmethod
+    def instance(cls, shape, dtype):
+        return cls()(shape, dtype)
+
     def setup(self, shape, dtype):
-        return super(Initializer, self).setup()
+        return super(Initializer, self).setup(shape, dtype)
 
     def _setup(self, shape, dtype):
         return self._f(shape=shape, dtype=dtype)
+
+    @property
+    def f(self):
+        return self._f
 
 
 class ZerosInitializer(Initializer, call=tf.zeros):

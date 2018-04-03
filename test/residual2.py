@@ -43,7 +43,7 @@ class Model(t4.Model):
         dense = residual(dense, t4.batch_normalization, t4.relu)
 
         flat = t4.flat_pool(dense)
-        pred = tf.nn.softmax(lin(flat))
+        pred = tf.nn.softmax(t4.batch_normalization(lin(flat)))
 
         loss = t4.categorical_cross_entropy_loss(pred, t4.OneHot(1000)(label),
                                                  with_false=False
@@ -92,8 +92,8 @@ def main():
     model.setup(stream)
     lr = 0.01
     with model.using_workers(20):
-        for epoch in range(40):
-            if epoch in [10, 20, 30]:
+        for epoch in range(50):
+            if epoch in [10, 20, 30, 40]:
                 lr *= 0.2
             print(f'epoch {epoch} ' + '-' * 100)
             stream.selected = 'train'
